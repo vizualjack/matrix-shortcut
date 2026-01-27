@@ -1,4 +1,4 @@
-package dev.vizualjack.matrix_shortcut
+package dev.vizualjack.matrix_shortcut.core
 
 import android.content.Context
 import java.io.File
@@ -10,8 +10,6 @@ import java.util.Locale
 class LogSaver(private val context: Context)  {
 
     private val FILE_NAME = "exceptions.txt"
-
-    fun save(exception: Exception) { save("$exception\n${exception.stackTraceToString()}") }
 
     fun save(text: String) {
         val filesDir = context.getExternalFilesDir(null) ?: return

@@ -1,18 +1,19 @@
-package dev.vizualjack.matrix_shortcut
+package dev.vizualjack.matrix_shortcut.core
 
 import android.content.Context
 import android.util.Log
-import dev.vizualjack.matrix_shortcut.ui.Settings
+import dev.vizualjack.matrix_shortcut.AppActivity
+import dev.vizualjack.matrix_shortcut.ui.screen.Settings
 import java.io.DataOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 
-private fun doSendToMatrixServer(settings: Settings, message:String, activity: MainActivity? = null, context: Context? = null):Boolean {
+private fun doSendToMatrixServer(settings: Settings, message: String, activity: AppActivity? = null, context: Context? = null):Boolean {
     val url = URL("https://${settings.domain}/_matrix/client/r0/rooms/${settings.roomId}/send/m.room.message?access_token=${settings.accessToken}")
     val connection = url.openConnection() as HttpURLConnection
     try {
         connection.requestMethod = "POST"
-        connection.connectTimeout = 5000 // Set your timeout as needed
+        connection.connectTimeout = 5000
         connection.readTimeout = 5000
         connection.setRequestProperty("Content-Type", "application/json")
         connection.doOutput = true
@@ -36,7 +37,7 @@ private fun doSendToMatrixServer(settings: Settings, message:String, activity: M
     }
 }
 
-fun sendToMatrixServer(settings:Settings, message:String, activity: MainActivity? = null, context: Context? = null) {
+fun sendToMatrixServer(settings: Settings, message:String, activity: AppActivity? = null, context: Context? = null) {
     val checkThread = Thread(Runnable {
         doSendToMatrixServer(settings, message, activity, context)
     })

@@ -18,7 +18,7 @@
         android:theme="@style/Theme.Test"
         tools:targetApi="31">
         <activity
-            android:name=".MainActivity"
+            android:name=".AppActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.Test"
@@ -28,7 +28,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <service android:name=".MyAccessibilityService"
+        <service android:name=".core.AccessibilityService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
             android:label="@string/accessibility_service_label"
             android:exported="true">

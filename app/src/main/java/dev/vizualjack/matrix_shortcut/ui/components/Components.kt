@@ -1,4 +1,4 @@
-package dev.vizualjack.matrix_shortcut.ui
+package dev.vizualjack.matrix_shortcut.ui.components
 
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ExperimentalMaterial3Api

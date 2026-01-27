@@ -1,4 +1,4 @@
-package dev.vizualjack.matrix_shortcut.ui
+package dev.vizualjack.matrix_shortcut.ui.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -38,14 +38,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import dev.vizualjack.matrix_shortcut.Gesture
-import dev.vizualjack.matrix_shortcut.MainActivity
-import dev.vizualjack.matrix_shortcut.ui.theme.TestTheme
+import dev.vizualjack.matrix_shortcut.core.data.Gesture
+import dev.vizualjack.matrix_shortcut.AppActivity
+import dev.vizualjack.matrix_shortcut.ui.theme.AppTheme
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GestureList(activity:MainActivity, gestures: List<Gesture>, addGesture:() -> Unit, openGesture:(Int) -> Unit, onSettingsClick:() -> Unit) {
+fun GestureList(activity:AppActivity, gestures: List<Gesture>, addGesture:() -> Unit, openGesture:(Int) -> Unit, onSettingsClick:() -> Unit) {
     var expanded by remember { mutableStateOf(false) }
 
     Box(
@@ -115,7 +115,7 @@ fun GestureList(activity:MainActivity, gestures: List<Gesture>, addGesture:() ->
 }
 
 @Composable
-fun GestureListEntry(gesture:Gesture, onClick: () -> Unit) {
+fun GestureListEntry(gesture: Gesture, onClick: () -> Unit) {
     Box(modifier = Modifier.height(40.dp)
         .fillMaxWidth()
         .padding(2.dp)
@@ -131,13 +131,13 @@ fun GestureListEntry(gesture:Gesture, onClick: () -> Unit) {
 @Preview(showBackground = true)
 @Composable
 fun GestureListPreview() {
-    TestTheme {
+    AppTheme {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
             GestureList(
-                activity = MainActivity(),
+                activity = AppActivity(),
                 gestures = listOf(
                     Gesture(arrayListOf(),"aaa"),
                     Gesture(arrayListOf(),"aaa"),

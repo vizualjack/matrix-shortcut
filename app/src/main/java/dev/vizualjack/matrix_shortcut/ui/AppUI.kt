@@ -16,24 +16,27 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import dev.vizualjack.matrix_shortcut.Gesture
-import dev.vizualjack.matrix_shortcut.GestureStorage
-import dev.vizualjack.matrix_shortcut.MainActivity
-import dev.vizualjack.matrix_shortcut.SettingsStorage
+import dev.vizualjack.matrix_shortcut.core.data.Gesture
+import dev.vizualjack.matrix_shortcut.core.data.Storage
+import dev.vizualjack.matrix_shortcut.AppActivity
+import dev.vizualjack.matrix_shortcut.core.data.storage.SettingsStorage
+import dev.vizualjack.matrix_shortcut.ui.screen.GestureEdit
+import dev.vizualjack.matrix_shortcut.ui.screen.GestureList
+import dev.vizualjack.matrix_shortcut.ui.screen.SettingsPage
 
-enum class TestScreen() {
+enum class Location() {
     Gestures,
     Gesture,
     Settings
 }
 
 @Composable
-fun TestApp(
-    activity: MainActivity,
-    viewModel: TestViewModel = viewModel(),
+fun AppUI(
+    activity: AppActivity,
+    viewModel: ViewModel = viewModel(),
     navController: NavHostController = rememberNavController()
 ) {
-    var gestures by remember { mutableStateOf(GestureStorage(activity.applicationContext).loadGestures()) }
+    var gestures by remember { mutableStateOf(Storage(activity.applicationContext).loadGestures()) }
     var selectedGesture: Gesture? = null
 
     Surface(
@@ -42,51 +45,52 @@ fun TestApp(
     ) {
         NavHost(
             navController = navController,
-            startDestination = TestScreen.Gestures.name,
+            startDestination = Location.Gestures.name,
         ) {
-            composable(route = TestScreen.Settings.name) {
+            composable(route = Location.Settings.name) {
                 SettingsPage(activity,
                     SettingsStorage(activity.applicationContext).loadSettings(),
                     backAction = {
-                    navController.backQueue.clear()
-                    navController.navigate(TestScreen.Gestures.name)
-                })
+                        navController.backQueue.clear()
+                        navController.navigate(Location.Gestures.name)
+                    }
+                )
             }
-            composable(route = TestScreen.Gestures.name) {
+            composable(route = Location.Gestures.name) {
                 GestureList(
                     activity = activity,
                     gestures = gestures,
                     openGesture = {index ->
                         selectedGesture = gestures[index]
                         navController.backQueue.clear()
-                        navController.navigate(TestScreen.Gesture.name)
+                        navController.navigate(Location.Gesture.name)
                     },
                     addGesture = {
                         gestures = gestures + Gesture(arrayListOf(),"")
                     },
                     onSettingsClick = {
                         navController.backQueue.clear()
-                        navController.navigate(TestScreen.Settings.name)
+                        navController.navigate(Location.Settings.name)
                     }
                 )
             }
-            composable(route = TestScreen.Gesture.name) {
+            composable(route = Location.Gesture.name) {
                 GestureEdit(
                     gesture = selectedGesture!!,
                     onBack = {
                         Log.i("Screen", "selectedGesture gestureElements...")
-                        for(gestureElement in selectedGesture!!.gestureElementList) {
+                        for(gestureElement in selectedGesture!!.gestureEntries) {
                             Log.i("Screen", "key ${gestureElement.keyCode} for ${gestureElement.minDuration}ms")
                         }
                         Log.i("Screen", "selectedGesture gestureElements...done")
                         navController.backQueue.clear()
-                        navController.navigate(TestScreen.Gestures.name)
-                        GestureStorage(activity.applicationContext).saveGestures(gestures)
+                        navController.navigate(Location.Gestures.name)
+                        Storage(activity.applicationContext).saveGestures(gestures)
                     },
                     onDelete = {
                         gestures = gestures.toMutableList().apply { remove(selectedGesture) }
                         navController.backQueue.clear()
-                        navController.navigate(TestScreen.Gestures.name)
+                        navController.navigate(Location.Gestures.name)
                     }
                 )
             }

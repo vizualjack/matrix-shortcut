@@ -3,16 +3,16 @@ package dev.vizualjack.matrix_shortcut.ui
 import android.util.Log
 import android.view.KeyEvent
 import androidx.lifecycle.ViewModel
-import dev.vizualjack.matrix_shortcut.Gesture
-import dev.vizualjack.matrix_shortcut.GestureElement
+import dev.vizualjack.matrix_shortcut.core.data.Gesture
+import dev.vizualjack.matrix_shortcut.core.data.GestureEntry
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-enum class KeyCode(val value:Int) {
-    VOLUME_UP(value = KeyEvent.KEYCODE_VOLUME_UP),
-    VOLUME_DOWN(value = KeyEvent.KEYCODE_VOLUME_DOWN)
+enum class KeyCode(val value:Int, val text: String) {
+    VOLUME_UP(KeyEvent.KEYCODE_VOLUME_UP, "Volume Up"),
+    VOLUME_DOWN(KeyEvent.KEYCODE_VOLUME_DOWN, "Volume Down"),
 }
 
 data class ServerSettingsState(
@@ -29,7 +29,7 @@ data class GestureState(
     val gesture: Gesture = Gesture(arrayListOf(),"")
 )
 
-class TestViewModel : ViewModel() {
+class ViewModel : ViewModel() {
     private val _uiServerSettingsState = MutableStateFlow(ServerSettingsState())
     private val _uiGesturesState = MutableStateFlow(GesturesState())
     private val _uiGestureState = MutableStateFlow(GestureState())
@@ -89,21 +89,21 @@ class TestViewModel : ViewModel() {
     }
 
     fun setActionName(actionName:String) {
-        _uiGestureState.update { it.copy(gesture = Gesture(selectedGesture!!.gestureElementList, actionName)) }
+        _uiGestureState.update { it.copy(gesture = Gesture(selectedGesture!!.gestureEntries, actionName)) }
     }
 
-    fun setGestureElementMinDuration(gestureElement: GestureElement, minDuration:Int) {
+    fun setGestureElementMinDuration(gestureElement: GestureEntry, minDuration:Int) {
         gestureElement.minDuration = minDuration
         _uiGestureState.update { it.copy(gesture = selectedGesture!!) }
     }
 
-    fun setGestureElementKeyCode(gestureElement: GestureElement, keyCode: Int) {
+    fun setGestureElementKeyCode(gestureElement: GestureEntry, keyCode: Int) {
         gestureElement.keyCode = keyCode
         _uiGestureState.update { it.copy(gesture = selectedGesture!!) }
     }
 
-    fun removeGestureElement(gestureElement: GestureElement) {
-        selectedGesture!!.gestureElementList.remove(gestureElement)
+    fun removeGestureElement(gestureElement: GestureEntry) {
+        selectedGesture!!.gestureEntries.remove(gestureElement)
         _uiGestureState.update { it.copy(gesture = selectedGesture!!) }
     }
 }

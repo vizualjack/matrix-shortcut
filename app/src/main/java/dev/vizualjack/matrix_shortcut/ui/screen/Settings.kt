@@ -1,4 +1,4 @@
-package dev.vizualjack.matrix_shortcut.ui
+package dev.vizualjack.matrix_shortcut.ui.screen
 
 import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
@@ -22,17 +22,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import dev.vizualjack.matrix_shortcut.MainActivity
-import dev.vizualjack.matrix_shortcut.SettingsStorage
-import dev.vizualjack.matrix_shortcut.sendToMatrixServer
-import dev.vizualjack.matrix_shortcut.ui.theme.TestTheme
+import dev.vizualjack.matrix_shortcut.AppActivity
+import dev.vizualjack.matrix_shortcut.core.data.storage.SettingsStorage
+import dev.vizualjack.matrix_shortcut.core.sendToMatrixServer
+import dev.vizualjack.matrix_shortcut.ui.components.EditStringField
+import dev.vizualjack.matrix_shortcut.ui.theme.AppTheme
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class Settings (val domain:String, val user:String, val accessToken:String, val roomId:String)
 
 @Composable
-fun SettingsPage(activity:MainActivity, settings:Settings, backAction:() -> Unit) {
+fun SettingsPage(activity:AppActivity, settings: Settings, backAction:() -> Unit) {
     var domain by rememberSaveable { mutableStateOf(settings.domain) }
     var user by rememberSaveable { mutableStateOf(settings.user) }
     var accessToken by rememberSaveable { mutableStateOf(settings.accessToken) }
@@ -85,12 +86,12 @@ fun SettingsPage(activity:MainActivity, settings:Settings, backAction:() -> Unit
 @Preview(showBackground = true)
 @Composable
 fun SettingsPreview() {
-    TestTheme {
+    AppTheme {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            SettingsPage(MainActivity(), Settings("","","", ""), backAction = {})
+            SettingsPage(AppActivity(), Settings("","","", ""), backAction = {})
         }
     }
 }

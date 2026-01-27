@@ -1,4 +1,4 @@
-package dev.vizualjack.matrix_shortcut.ui
+package dev.vizualjack.matrix_shortcut.ui.screen
 
 import android.view.KeyEvent
 import androidx.compose.foundation.layout.Arrangement
@@ -38,13 +38,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import dev.vizualjack.matrix_shortcut.Gesture
-import dev.vizualjack.matrix_shortcut.GestureElement
-import dev.vizualjack.matrix_shortcut.ui.theme.TestTheme
+import dev.vizualjack.matrix_shortcut.core.data.Gesture
+import dev.vizualjack.matrix_shortcut.core.data.GestureEntry
+import dev.vizualjack.matrix_shortcut.ui.KeyCode
+import dev.vizualjack.matrix_shortcut.ui.components.EditNumberField
+import dev.vizualjack.matrix_shortcut.ui.components.EditStringField
+import dev.vizualjack.matrix_shortcut.ui.theme.AppTheme
 
 @Composable
-fun GestureEdit(gesture:Gesture, onBack:() -> Unit, onDelete:() -> Unit) {
-    var gestureElements by remember { mutableStateOf(gesture.gestureElementList) }
+fun GestureEdit(gesture: Gesture, onBack:() -> Unit, onDelete:() -> Unit) {
+    var gestureElements by remember { mutableStateOf(gesture.gestureEntries) }
     var actionName by remember { mutableStateOf(gesture.actionName) }
     Box(
         modifier = Modifier
@@ -54,7 +57,7 @@ fun GestureEdit(gesture:Gesture, onBack:() -> Unit, onDelete:() -> Unit) {
     ) {
         Button(onClick = {
             gesture.actionName = actionName
-            gesture.gestureElementList = gestureElements
+            gesture.gestureEntries = gestureElements
             onBack()
         }) {
             Text(text = "Back")
@@ -96,7 +99,7 @@ fun GestureEdit(gesture:Gesture, onBack:() -> Unit, onDelete:() -> Unit) {
                     GestureEditEntry(
                         gestureElement = gestureElements[index],
                         deleteGestureElement = {
-                            gestureElements = gestureElements.toMutableList().apply { remove(gestureElements[index]) } as ArrayList<GestureElement>
+                            gestureElements = gestureElements.toMutableList().apply { remove(gestureElements[index]) } as ArrayList<GestureEntry>
                         }
                     )
                 }
@@ -105,7 +108,7 @@ fun GestureEdit(gesture:Gesture, onBack:() -> Unit, onDelete:() -> Unit) {
         Spacer(modifier = Modifier.height(10.dp))
         SmallFloatingActionButton(
             onClick = {
-                gestureElements = (gestureElements + GestureElement(KeyCode.VOLUME_UP.value, 0)) as ArrayList<GestureElement>
+                gestureElements = (gestureElements + GestureEntry(KeyCode.VOLUME_UP.value, 0)) as ArrayList<GestureEntry>
             },
         ) {
             Icon(Icons.Filled.Add, "Add gesture element")
@@ -116,14 +119,14 @@ fun GestureEdit(gesture:Gesture, onBack:() -> Unit, onDelete:() -> Unit) {
 @Preview(showBackground = true)
 @Composable
 fun GestureEditPreview() {
-    TestTheme {
+    AppTheme {
         Surface(
             color = MaterialTheme.colorScheme.background
         ) {
             GestureEdit(
                 gesture = Gesture(arrayListOf(
-                    GestureElement(KeyEvent.KEYCODE_VOLUME_DOWN,100),
-                    GestureElement(KeyEvent.KEYCODE_VOLUME_UP,0)
+                    GestureEntry(KeyEvent.KEYCODE_VOLUME_DOWN,100),
+                    GestureEntry(KeyEvent.KEYCODE_VOLUME_UP,0)
                 ),"TEST"),
                 onBack = {},
                 onDelete = {}
@@ -133,7 +136,7 @@ fun GestureEditPreview() {
 }
 
 @Composable
-fun GestureEditEntry(gestureElement: GestureElement, deleteGestureElement:() -> Unit) {
+fun GestureEditEntry(gestureElement: GestureEntry, deleteGestureElement:() -> Unit) {
     var keyCodeVal = KeyCode.VOLUME_DOWN
     if(gestureElement.keyCode == KeyCode.VOLUME_UP.value) keyCodeVal = KeyCode.VOLUME_UP
 
