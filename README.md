@@ -14,14 +14,14 @@ This app is a small tool that lets you send messages to a Matrix server using pr
 	<img src="doc/settings.png" height="500"/>
 </p>
 
-## Features
+### 📝 Features
 - Configure a Matrix server connection
 - Add, edit, and remove shortcuts
 - Import and export app configuration
 - Record gestures and detect matching inputs
 - Send messages to a Matrix server
 
-## Setup
+## 📱 Setup
 ### 1. 📥 Download the app(.apk)
 Go to the [Releases section](https://github.com/vizualjack/matrix-shortcut/releases) of this repository and download the latest APK.
 
