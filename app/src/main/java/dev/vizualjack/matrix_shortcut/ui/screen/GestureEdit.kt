@@ -46,9 +46,17 @@ import dev.vizualjack.matrix_shortcut.ui.components.EditStringField
 import dev.vizualjack.matrix_shortcut.ui.theme.AppTheme
 
 @Composable
-fun GestureEdit(gesture: Gesture, onBack:() -> Unit, onDelete:() -> Unit) {
-    var gestureElements by remember { mutableStateOf(gesture.gestureEntries) }
-    var actionName by remember { mutableStateOf(gesture.actionName) }
+fun GestureEdit(editGesture: Gesture?, onSave: (gesture: Gesture) -> Unit, onBack: () -> Unit, onDelete: () -> Unit) {
+    var name by remember { mutableStateOf("") }
+    var message by remember { mutableStateOf("") }
+    var gestureEntries by remember { mutableStateOf(arrayListOf<GestureEntry>()) }
+
+    if(editGesture != null) {
+        name = editGesture.name
+        message = editGesture.message
+        gestureEntries = editGesture.gestureEntries
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -56,8 +64,6 @@ fun GestureEdit(gesture: Gesture, onBack:() -> Unit, onDelete:() -> Unit) {
         contentAlignment = Alignment.TopStart
     ) {
         Button(onClick = {
-            gesture.actionName = actionName
-            gesture.gestureEntries = gestureElements
             onBack()
         }) {
             Text(text = "Back")
@@ -70,14 +76,32 @@ fun GestureEdit(gesture: Gesture, onBack:() -> Unit, onDelete:() -> Unit) {
             .padding(16.dp),
         contentAlignment = Alignment.TopEnd
     ) {
-        Button(onClick = { onDelete() }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFBF0000))) {
-            Text(text = "Delete")
+        Row {
+            Button(
+                enabled = editGesture != null,
+                onClick = { onDelete() },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFBF0000))
+            ) {
+                Text(text = "Delete")
+            }
+            Spacer(modifier = Modifier.width(5.dp))
+            Button(
+                onClick = {
+                    var gesture = Gesture("","", arrayListOf())
+                    if (editGesture != null) gesture = editGesture
+                    gesture.name = name
+                    gesture.message = message
+                    gesture.gestureEntries = gestureEntries
+                    onSave(gesture)
+                },
+            ) {
+                Text(text = "Save")
+            }
         }
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -86,20 +110,28 @@ fun GestureEdit(gesture: Gesture, onBack:() -> Unit, onDelete:() -> Unit) {
         }
         Spacer(modifier = Modifier.height(32.dp))
         EditStringField(
-            text = "message",
-            value = actionName,
+            text = "name",
+            value = name,
             onValueChanged = {
-                actionName = it
+                name = it
+            }
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        EditStringField(
+            text = "message",
+            value = message,
+            onValueChanged = {
+                message = it
             }
         )
         Spacer(modifier = Modifier.height(20.dp))
         Box(modifier = Modifier.fillMaxHeight(0.5f)) {
             LazyColumn {
-                items(gestureElements.size) {index ->
+                items(gestureEntries.size) { index ->
                     GestureEditEntry(
-                        gestureElement = gestureElements[index],
+                        gestureElement = gestureEntries[index],
                         deleteGestureElement = {
-                            gestureElements = gestureElements.toMutableList().apply { remove(gestureElements[index]) } as ArrayList<GestureEntry>
+                            gestureEntries = gestureEntries.toMutableList().apply { remove(gestureEntries[index]) } as ArrayList<GestureEntry>
                         }
                     )
                 }
@@ -108,7 +140,7 @@ fun GestureEdit(gesture: Gesture, onBack:() -> Unit, onDelete:() -> Unit) {
         Spacer(modifier = Modifier.height(10.dp))
         SmallFloatingActionButton(
             onClick = {
-                gestureElements = (gestureElements + GestureEntry(KeyCode.VOLUME_UP.value, 0)) as ArrayList<GestureEntry>
+                gestureEntries = (gestureEntries + GestureEntry(KeyCode.VOLUME_UP.value, 0)) as ArrayList<GestureEntry>
             },
         ) {
             Icon(Icons.Filled.Add, "Add gesture element")
@@ -124,11 +156,12 @@ fun GestureEditPreview() {
             color = MaterialTheme.colorScheme.background
         ) {
             GestureEdit(
-                gesture = Gesture(arrayListOf(
+                editGesture = Gesture("Name goes here", "may day",arrayListOf(
                     GestureEntry(KeyEvent.KEYCODE_VOLUME_DOWN,100),
                     GestureEntry(KeyEvent.KEYCODE_VOLUME_UP,0)
-                ),"TEST"),
+                )),
                 onBack = {},
+                onSave = {},
                 onDelete = {}
             )
         }
@@ -137,10 +170,11 @@ fun GestureEditPreview() {
 
 @Composable
 fun GestureEditEntry(gestureElement: GestureEntry, deleteGestureElement:() -> Unit) {
-    var keyCodeVal = KeyCode.VOLUME_DOWN
-    if(gestureElement.keyCode == KeyCode.VOLUME_UP.value) keyCodeVal = KeyCode.VOLUME_UP
+    var keyCodeValue = KeyCode.UNKNOWN
+    if(gestureElement.keyCode == KeyCode.VOLUME_UP.value) keyCodeValue = KeyCode.VOLUME_UP
+    if(gestureElement.keyCode == KeyCode.VOLUME_DOWN.value) keyCodeValue = KeyCode.VOLUME_DOWN
 
-    var keyCode by remember { mutableStateOf(keyCodeVal) }
+    var keyCode by remember { mutableStateOf(keyCodeValue) }
     var minDuration by remember { mutableStateOf(gestureElement.minDuration) }
 
     Row(modifier = Modifier.padding(3.dp)) {
@@ -153,7 +187,7 @@ fun GestureEditEntry(gestureElement: GestureEntry, deleteGestureElement:() -> Un
         )
         Spacer(modifier = Modifier.width(3.dp))
         EditNumberField(
-            text = "min dur. (ms)",
+            text = "min. dur (ms)",
             value = minDuration,
             onValueChanged = {
                 minDuration = it
@@ -171,7 +205,7 @@ fun GestureEditEntry(gestureElement: GestureEntry, deleteGestureElement:() -> Un
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalStdlibApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun KeyCodeDropdown(
     keyCode: KeyCode,
@@ -189,7 +223,7 @@ fun KeyCodeDropdown(
             }
         ) {
             TextField(
-                value = keyCode.name,
+                value = keyCode.text,
                 onValueChange = {},
                 readOnly = true,
                 textStyle = MaterialTheme.typography.bodySmall,
@@ -202,7 +236,7 @@ fun KeyCodeDropdown(
             ) {
                 KeyCode.values().forEach {
                     DropdownMenuItem(
-                        text = { Text(text = it.name) },
+                        text = { Text(text = it.text) },
                         onClick = {
                             onKeyCodeChanged(it)
                             expanded = false

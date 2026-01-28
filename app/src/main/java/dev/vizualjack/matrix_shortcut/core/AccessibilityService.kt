@@ -209,8 +209,8 @@ class AccessibilityService : AccessibilityService() {
                 logSaver?.save(logLine)
                 return
             }
-            val settings = storageData.settings ?: return
-            sendToMatrixServer(settings, actionName, context = applicationContext)
+            val settings = storageData.matrixConfig ?: return
+//            sendToMatrixServer(settings, actionName, context = applicationContext)
             Log.i(javaClass.name, "sent action: $actionName")
         } catch (ex: Exception) {
             val logLine = createExceptionLine("error while sending action: ", ex)

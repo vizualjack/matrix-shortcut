@@ -11,7 +11,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import dev.vizualjack.matrix_shortcut.core.data.Storage
 import dev.vizualjack.matrix_shortcut.core.data.StorageData
 import dev.vizualjack.matrix_shortcut.core.LogSaver
-import dev.vizualjack.matrix_shortcut.core.data.storage.SettingsStorage
 import dev.vizualjack.matrix_shortcut.ui.AppUI
 import dev.vizualjack.matrix_shortcut.ui.theme.AppTheme
 import kotlinx.serialization.json.Json
@@ -27,10 +26,8 @@ class AppActivity : ComponentActivity() {
                 val data: Intent? = result.data
                 val uri = data?.data ?:return@registerForActivityResult
                 contentResolver.openOutputStream(uri)?.use { outputStream ->
-                    val appData = StorageData()
-                    appData.settings = SettingsStorage(applicationContext).loadSettings()
-                    appData.gestures = Storage(applicationContext).loadGestures()
-                    val appDataAsString = Json.encodeToString(appData)
+                    val storageData = Storage(applicationContext).loadData()
+                    val appDataAsString = Json.encodeToString(storageData)
                     outputStream.write(appDataAsString.toByteArray())
                 }
                 Log.i("MainActivity","Exporting successful!")
@@ -45,9 +42,8 @@ class AppActivity : ComponentActivity() {
                 val uri = data?.data ?:return@registerForActivityResult
                 try {
                     contentResolver.openInputStream(uri)?.use { outputStream ->
-                        val appData = Json.decodeFromString<StorageData>(outputStream.readBytes().decodeToString())
-                        if(appData.gestures != null) Storage(applicationContext).saveGestures(appData.gestures!!)
-                        if(appData.settings != null) SettingsStorage(applicationContext).saveSettings(appData.settings!!)
+                        val storageData = Json.decodeFromString<StorageData>(outputStream.readBytes().decodeToString())
+                        if(storageData.gestures != null && storageData.matrixConfig != null) Storage(applicationContext).saveData(storageData)
                     }
                     Log.i("MainActivity","Importing successful!")
                     setContent {
@@ -56,8 +52,9 @@ class AppActivity : ComponentActivity() {
                         }
                     }
                 } catch (ex:Exception) {
-                    Log.i("MainActivity","Exception while importing: $ex\n${ex.stackTraceToString()}")
-                    LogSaver(applicationContext).save(ex)
+                    val logLine = "error while importing: $ex\n${ex.stackTraceToString()}"
+                    Log.e(javaClass.name,logLine)
+                    LogSaver(applicationContext).save(logLine)
                 }
             }
         }

@@ -20,7 +20,7 @@ class GestureDetector(
 
     fun getUniqueMatchActionName():String? {
         if (!hasUniqueMatch()) return null
-        return gestures[0].actionName
+        return gestures[0].message
     }
 
     private fun cleanUpMissedGestures() {

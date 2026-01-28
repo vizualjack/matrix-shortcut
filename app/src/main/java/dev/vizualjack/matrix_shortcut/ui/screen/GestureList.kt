@@ -45,7 +45,7 @@ import dev.vizualjack.matrix_shortcut.ui.theme.AppTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GestureList(activity:AppActivity, gestures: List<Gesture>, addGesture:() -> Unit, openGesture:(Int) -> Unit, onSettingsClick:() -> Unit) {
+fun GestureList(activity:AppActivity, gestures: List<Gesture>, newGesture:() -> Unit, openGesture:(Int) -> Unit, onSettingsClick:() -> Unit) {
     var expanded by remember { mutableStateOf(false) }
 
     Box(
@@ -107,7 +107,7 @@ fun GestureList(activity:AppActivity, gestures: List<Gesture>, addGesture:() -> 
         }
         Spacer(modifier = Modifier.height(10.dp))
         SmallFloatingActionButton(
-            onClick = { addGesture() },
+            onClick = { newGesture() },
         ) {
             Icon(Icons.Filled.Add, "Add gesture element")
         }
@@ -124,7 +124,7 @@ fun GestureListEntry(gesture: Gesture, onClick: () -> Unit) {
             onClick()
         },
         contentAlignment = Alignment.Center) {
-        Text(text = AnnotatedString(gesture.actionName), color = Color.White )
+        Text(text = AnnotatedString(gesture.message), color = Color.White )
     }
 }
 
@@ -139,17 +139,16 @@ fun GestureListPreview() {
             GestureList(
                 activity = AppActivity(),
                 gestures = listOf(
-                    Gesture(arrayListOf(),"aaa"),
-                    Gesture(arrayListOf(),"aaa"),
-                    Gesture(arrayListOf(),"aaa"),
-                    Gesture(arrayListOf(),"aaa"),
-                    Gesture(arrayListOf(),"aaa"),
-                    Gesture(arrayListOf(),"aaa"),
-                    Gesture(arrayListOf(),"aaa"),
-                    Gesture(arrayListOf(),"aaa"),
-                    Gesture(arrayListOf(),"aaa"),
+                    Gesture("give me a name", "may day", arrayListOf()),
+                    Gesture("give me a name", "may day", arrayListOf()),
+                    Gesture("give me a name", "may day", arrayListOf()),
+                    Gesture("give me a name", "may day", arrayListOf()),
+                    Gesture("give me a name", "may day", arrayListOf()),
+                    Gesture("give me a name", "may day", arrayListOf()),
+                    Gesture("give me a name", "may day", arrayListOf()),
+                    Gesture("give me a name", "may day", arrayListOf()),
                 ),
-                addGesture = {},
+                newGesture = {},
                 openGesture = {},
                 onSettingsClick = {}
             )
