@@ -1,10 +1,11 @@
-package dev.vizualjack.matrix_shortcut.core
+package dev.vizualjack.matrix_shortcut.core.matrix
 
 import android.content.Context
 import android.util.Log
+import dev.vizualjack.matrix_shortcut.core.LogSaver
+import dev.vizualjack.matrix_shortcut.core.createExceptionLine
 import dev.vizualjack.matrix_shortcut.core.data.MatrixConfig
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.DataOutputStream
 import java.net.HttpURLConnection
@@ -28,9 +29,10 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
     enum class RequestMethod(val value: String) {
         POST("POST"),
         GET("GET"),
+        PUT("PUT")
     }
 
-    val baseUrl = "https://${serverDomain}/_matrix/client"
+    val baseUrl = "https://${serverDomain}/_matrix/client/v3"
 
     var userName: String? = null
     var accessToken: String? = null
@@ -57,12 +59,143 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
         return loginRequest(userName, password)
     }
 
-    fun requestRooms(): ResultWithText {
+    @Serializable
+    data class CreateRoomRequest(
+        val name: String?,
+        val is_direct: Boolean?,
+        val visibility: String?,
+        val invite: Array<String>? = null,
+        val preset: String? = null,
+    )
 
+    fun createRoom(name: String, private: Boolean, username: String): ResultWithText {
+//        POST /_matrix/client/v3/createRoom
+//        {
+//            "name": "My Private Room",
+//            "visibility": "private"
+//            "invite": ["@bob:example.org"],
+//        }
+        val request = CreateRoomRequest(name, null, if(private) "private" else "public", arrayOf("@$username:$serverDomain"))
+        val requestJson = Json.encodeToString(CreateRoomRequest.serializer(), request)
+        val response = postRequest("$baseUrl/createRoom", true, requestJson)
+        if(response == null) return ResultWithText(Result.UNREACHABLE, "Got no response")
+        if(response.code != 200) return getErrorOfFailedResponse(response)
+        return ResultWithText(Result.SUCCESS, "Successfully created room")
+    }
+
+    fun createPrivateChat(username: String): ResultWithText {
+//       POST  /_matrix/client/v3/createRoom
+//        {
+//            "visibility": "private"
+//            "invite": ["@bob:example.org"],
+//            "is_direct": true
+//        }
+        val request = CreateRoomRequest(null, true, "private", arrayOf("@$username:$serverDomain"))
+        val requestJson = Json.encodeToString(CreateRoomRequest.serializer(), request)
+        val response = postRequest("$baseUrl/createRoom", true, requestJson)
+        if(response == null) return ResultWithText(Result.UNREACHABLE, "Got no response")
+        if(response.code != 200) return getErrorOfFailedResponse(response)
+        return ResultWithText(Result.SUCCESS, "Successfully created private chat")
+    }
+
+    @Serializable
+    data class JoinedRoomsResponse(
+        val joined_rooms: Array<String>
+    )
+
+    @Serializable
+    data class RoomNameResponse(
+        val name: String
+    )
+
+    @Serializable
+    data class MemberInfo(
+        val display_name: String
+    )
+
+    data class Member(
+        val userName: String,
+        val display_name: String
+    )
+
+    @Serializable
+    data class JoinedMembersResponse(
+        val joined: Map<String, MemberInfo>
+    ) {
+        fun getMembers(): ArrayList<Member> {
+            val members = arrayListOf<Member>()
+            for(entry in joined) {
+                val fullUserId = entry.key
+                val display_name = entry.value.display_name
+                val username = fullUserId.replace("@", "").split(":")[0]
+                members.add(Member(username, display_name))
+            }
+            return members
+        }
+    }
+
+    fun getJoinedRooms(): ResultWithText {
+        val response = getRequest("$baseUrl/joined_rooms", true)
+        if(response == null) return ResultWithText(Result.UNREACHABLE, "Got no response")
+        if(response.code != 200) getErrorOfFailedResponse(response)
+        val responseObject = Json.decodeFromString<JoinedRoomsResponse>(response.text)
+        if(responseObject.joined_rooms.size <= 0) return ResultWithText(Result.SUCCESS, "No rooms")
+        for (roomId in responseObject.joined_rooms) {
+            var roomName: String? = null
+            val response = getRequest("$baseUrl/rooms/$roomId/state/m.room.name", true)
+            if(response == null) return ResultWithText(Result.UNREACHABLE, "Server unreachable")
+            if(response.code != 200 && response.code != 404) return getErrorOfFailedResponse(response)
+            if(response.code == 200) roomName = Json.decodeFromString(RoomNameResponse.serializer(), response.text).name
+            if(roomName == null) {
+                val response = getRequest("$baseUrl/rooms/$roomId/joined_members", true)
+                if(response == null) return ResultWithText(Result.UNREACHABLE, "Server unreachable")
+                if(response.code != 200 && response.code != 404) return getErrorOfFailedResponse(response)
+                if(response.code != 200) return ResultWithText(Result.UNKNOWN, "Can't get joined member for room")
+                val responseObject = Json.decodeFromString<JoinedMembersResponse>(response.text)
+                val members = responseObject.getMembers()
+                var chatPartnerMember: Member? = null
+                for (member in members) {
+                    if(member.userName == userName) continue
+                    chatPartnerMember = member
+                    break
+                }
+                if (chatPartnerMember == null) return ResultWithText(Result.UNKNOWN, "Can't get chat partner from joined members")
+                roomName = chatPartnerMember.display_name
+            }
+//            TODO: user room id and room name to add it to the joined rooms list
+        }
+        return ResultWithText(Result.SUCCESS, "Got all joined rooms")
+    }
+
+
+    @Serializable
+    data class Rooms(
+        val invite: Map<String, Unit>,
+        val join: Map<String, Unit>
+    )
+
+    @Serializable
+    data class SyncResponse(
+        val rooms: Rooms?
+    )
+
+    fun acceptAllInvites(): ResultWithText {
+        val response = getRequest("$baseUrl/sync", true)
+        if(response == null) return ResultWithText(Result.UNREACHABLE, "Got no response")
+        if(response.code != 200) getErrorOfFailedResponse(response)
+        val responseObject = Json.decodeFromString<SyncResponse>(response.text)
+        if(responseObject.rooms == null || responseObject.rooms.invite.isEmpty()) return ResultWithText(Result.SUCCESS, "No invites")
+        for (roomId in responseObject.rooms.invite.keys) {
+            val response = postRequest("$baseUrl/join/$roomId", true)
+            if (response == null) return ResultWithText(Result.UNKNOWN, "No response for join request")
+            else if (response.code != 200) return ResultWithText(Result.UNKNOWN, "One join request wasn't successful")
+        }
+        return ResultWithText(Result.SUCCESS, "Accecpted all invites")
     }
 
     fun sendMessage(message: String): ResultWithText {
-        val firstResponse = sendMessageRequest(message)
+        val messageId = UUID.randomUUID().toString()
+        val firstResponse = sendMessageRequest(message, messageId)
         if (firstResponse == null) return ResultWithText(Result.UNREACHABLE, "Server not reachable")
         if(firstResponse.code == 200) return ResultWithText(Result.SUCCESS, "Success")
         if(firstResponse.code != 401) {
@@ -88,7 +221,7 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
             return ResultWithText(Result.UNAUTHORIZED, "Access token didn't change")
         }
 
-        val secondResponse = sendMessageRequest(message)
+        val secondResponse = sendMessageRequest(message, messageId)
         if (secondResponse == null) return ResultWithText(Result.UNREACHABLE, "Server not reachable")
         if(secondResponse.code == 200) return ResultWithText(Result.SUCCESS, "Success")
         if(secondResponse.code != 401) {
@@ -129,7 +262,7 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
     )
 
     private fun loginRequest(userName: String, password: String): ResultWithText {
-        val url = "$baseUrl/_matrix/client/v3/login"
+        val url = "$baseUrl/login"
         val loginRequest = LoginRequest(
             identifier = Identifier(
                 user = "@$userName:$serverDomain"
@@ -137,7 +270,7 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
             password = password
         )
         val requestBody = Json.encodeToString(LoginRequest.serializer(), loginRequest)
-        val response = postRequest(url, requestBody)
+        val response = postRequest(url, false, requestBody)
         if (response == null) return ResultWithText(Result.UNREACHABLE, "Server not reachable")
         if (response.code == 200) {
             val loginResponse = Json.decodeFromString<SuccessfulLoginResponse>(response.text)
@@ -165,12 +298,12 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
     )
 
     private fun refreshAccessTokenRequest(refreshToken: String): ResultWithText {
-        val url = "$baseUrl/_matrix/client/v3/refresh"
+        val url = "$baseUrl/refresh"
         val refreshTokenRequest = RefreshTokenRequest(
             refresh_token = refreshToken
         )
         val requestBody = Json.encodeToString(RefreshTokenRequest.serializer(), refreshTokenRequest)
-        val response = postRequest(url, requestBody)
+        val response = postRequest(url, false, requestBody)
         if (response == null) return ResultWithText(Result.UNREACHABLE, "Server not reachable")
         if (response.code == 200) {
             val refreshTokenResponse = Json.decodeFromString<SuccessfulRefreshTokenResponse>(response.text)
@@ -190,12 +323,11 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
         val body: String
     )
 
-    private fun sendMessageRequest(message: String): Response? {
-        val messageId = UUID.randomUUID().toString()
-        val url = "$baseUrl/_matrix/client/v3/rooms/${targetRoom}/send/m.room.message/${messageId}"
+    private fun sendMessageRequest(message: String, messageId: String): Response? {
+        val url = "$baseUrl/rooms/${targetRoom}/send/m.room.message/${messageId}"
         val messageRequest = MessageRequest(body = message)
         val requestBody = Json.encodeToString(MessageRequest.serializer(), messageRequest)
-        return postRequest(url, requestBody)
+        return putRequest(url, true, requestBody)
     }
 
     private fun getErrorOfFailedResponse(response: Response): ResultWithText {
@@ -223,16 +355,30 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
         return ResultWithText(Result.UNKNOWN, "Unknown error")
     }
 
-    private fun postRequest(url: String, requestBody: String): Response? {
-        val connection = createConnection(url, RequestMethod.POST) ?: return null
+    private fun postRequest(url: String, needsAuthorization: Boolean, requestBody: String? = null): Response? {
+        val connection = createConnection(url, RequestMethod.POST, needsAuthorization) ?: return null
         var response: Response? = null
-        if(sendRequest(connection, requestBody)) response = receiveResponse(connection)
+        val needToReceive: Boolean
+        if(requestBody != null) needToReceive = sendRequest(connection, requestBody)
+        else needToReceive = true
+        if(needToReceive) response = receiveResponse(connection)
         connection.disconnect()
         return response
     }
 
-    private fun getRequest(url: String): Response? {
-        val connection = createConnection(url, RequestMethod.GET) ?: return null
+    private fun putRequest(url: String, needsAuthorization: Boolean, requestBody: String? = null): Response? {
+        val connection = createConnection(url, RequestMethod.POST, needsAuthorization) ?: return null
+        var response: Response? = null
+        val needToReceive: Boolean
+        if(requestBody != null) needToReceive = sendRequest(connection, requestBody)
+        else needToReceive = true
+        if(needToReceive) response = receiveResponse(connection)
+        connection.disconnect()
+        return response
+    }
+
+    private fun getRequest(url: String, needsAuthorization: Boolean): Response? {
+        val connection = createConnection(url, RequestMethod.GET, needsAuthorization) ?: return null
         val response = receiveResponse(connection)
         connection.disconnect()
         return response
@@ -265,13 +411,14 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
         return response
     }
 
-    private fun createConnection(url: String, method: RequestMethod): HttpURLConnection? {
+    private fun createConnection(url: String, method: RequestMethod, needsAuthorization: Boolean): HttpURLConnection? {
         try {
             val connection = URL(url).openConnection() as HttpURLConnection
             connection.connectTimeout = TIMEOUT
             connection.readTimeout = TIMEOUT
             connection.requestMethod = method.value
             if(method == RequestMethod.POST) connection.setRequestProperty("Content-Type", "application/json")
+            if(needsAuthorization && accessToken != null) connection.setRequestProperty("Authorization", "Bearer $accessToken")
             connection.doOutput = true
             connection.doInput = true
             return connection
