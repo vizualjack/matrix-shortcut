@@ -9,7 +9,7 @@ data class SyncResponse(
 
 @Serializable
 data class RoomNameResponse(
-    val name: String
+    val name: String?
 )
 
 @Serializable
@@ -19,10 +19,11 @@ data class JoinedRoomsResponse(
 
 @Serializable
 data class JoinedMembersResponse(
-    val joined: Map<String, MemberInfo>
+    val joined: Map<String, MemberInfo>?
 ) {
     fun getMembers(): ArrayList<Member> {
         val members = arrayListOf<Member>()
+        if(joined == null) return members
         for(entry in joined) {
             val fullUserId = entry.key
             val display_name = entry.value.display_name

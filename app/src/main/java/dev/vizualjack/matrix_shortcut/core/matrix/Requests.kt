@@ -20,6 +20,11 @@ data class MessageRequest(
     val body: String
 )
 
+enum class RoomVisibility(val text: String) {
+    PRIVATE("private"),
+    PUBLIC("public")
+}
+
 @Serializable
 data class CreateRoomRequest(
     val name: String?,

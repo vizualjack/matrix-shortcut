@@ -3,6 +3,7 @@ package dev.vizualjack.matrix_shortcut.core.matrix
 import android.content.Context
 import android.util.Log
 import dev.vizualjack.matrix_shortcut.core.LogSaver
+import dev.vizualjack.matrix_shortcut.core.createExceptionLine
 import dev.vizualjack.matrix_shortcut.core.data.MatrixConfig
 import kotlinx.serialization.json.Json
 import java.net.HttpURLConnection
@@ -16,159 +17,246 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
         UNKNOWN,
         SERVER_UNREACHABLE,
         UNAUTHORIZED,
+        FORBIDDEN,
         UNEXPECTED_RESPONSE,
         TOO_MANY_REQUESTS,
+        NOT_FOUND
     }
 
-    data class SimpleResult(val success: Boolean, val error: Error? = null)
-    data class Result<Type>(val success: Boolean, val error: Error? = null, val value: Type)
+    data class SimpleResult(val success: Boolean, val error: Error? = null) {
+        fun <Type> toResult(): Result<Type> {
+            return Result(success, error, null)
+        }
+    }
+    data class Result<Type>(val success: Boolean, val error: Error? = null, val value: Type? = null)
 
     var userName: String? = null
     var accessToken: String? = null
     var refreshToken: String? = null
     var targetRoom: String? = null
 
-    constructor(context: Context, matrixConfig: MatrixConfig) : this(context, matrixConfig.serverDomain) {
-        userName = matrixConfig.userName
-        accessToken = matrixConfig.accessToken
-        refreshToken = matrixConfig.refreshToken
+    constructor(context: Context, serverDomain: String, userName: String, accessToken: String, refreshToken: String) : this(context, serverDomain) {
+        this.userName = userName
+        this.accessToken = accessToken
+        this.refreshToken = refreshToken
     }
 
-    fun getConfig(): MatrixConfig {
-        return MatrixConfig(
-            serverDomain,
-            userName,
-            accessToken,
-            refreshToken,
-            targetRoom
-        )
-    }
-
-    fun login(userName: String, password: String): SimpleResult {
-        return loginRequest(userName, password)
-    }
-
-    fun createRoom(name: String, private: Boolean, username: String): SimpleResult {
-        val request = CreateRoomRequest(name, null, if(private) "private" else "public", arrayOf("@$username:$serverDomain"))
-        return createRoomRequst(request)
+    fun createRoom(name: String, visibility: RoomVisibility, username: String): SimpleResult {
+        return createRoom(CreateRoomRequest(
+            name,
+            null,
+            visibility.text,
+            arrayOf(createFullUserId(username))
+        ))
     }
 
     fun createPrivateChat(username: String): SimpleResult {
-        val request = CreateRoomRequest(null, true, "private", arrayOf("@$username:$serverDomain"))
-        return createRoomRequst(request)
+        return createRoom(CreateRoomRequest(
+            null,
+            true,
+            RoomVisibility.PRIVATE.text,
+            arrayOf(createFullUserId(username))
+        ))
     }
 
-    private fun createRoomRequst(request: CreateRoomRequest): SimpleResult {
-        val url = "$baseUrl/createRoom"
-        val restClient = RESTClient(context, accessToken)
-        val firstResponse = restClient.post(url, request, CreateRoomRequest.serializer())
-        if(firstResponse == null) return SimpleResult(false, Error.SERVER_UNREACHABLE)
-        if(firstResponse.code == HttpURLConnection.HTTP_UNAUTHORIZED) {
-            if (refreshToken == null) return SimpleResult(false, Error.UNAUTHORIZED)
-            val result = refreshAccessTokenRequest(refreshToken!!)
+    private fun createRoom(request: CreateRoomRequest): SimpleResult {
+        val response = createRoomRequst(request)
+        val checkResult = checkResponse(response)
+        if(!checkResult.success && checkResult.error == Error.UNAUTHORIZED && refreshToken != null) {
+            val result = refreshAccessToken()
             if(!result.success) return result
-        } else if(firstResponse.code != HttpURLConnection.HTTP_OK) return checkAndLogUnexpectedResponse(firstResponse)
-        val secondResponse = restClient.post(url, request, CreateRoomRequest.serializer())
-        if(secondResponse == null) return SimpleResult(false, Error.SERVER_UNREACHABLE)
-        if(secondResponse.code == HttpURLConnection.HTTP_UNAUTHORIZED) return SimpleResult(false, Error.UNAUTHORIZED)
-        else if(secondResponse.code != HttpURLConnection.HTTP_OK) return checkAndLogUnexpectedResponse(firstResponse)
-        return SimpleResult(true)
+        }
+        else if(!checkResult.success) return checkResult
+        return checkResponse(createRoomRequst(request))
     }
 
-    fun getJoinedRooms(): SimpleResult {
-        val restClient = RESTClient(context, accessToken)
-        val response = restClient.get("$baseUrl/joined_rooms")
-        if(response == null) return SimpleResult(false, Error.SERVER_UNREACHABLE)
-        if(response.code != 200) checkAndLogUnexpectedResponse(response)
-        val responseObject = Json.decodeFromString<JoinedRoomsResponse>(response.text)
-        if(responseObject.joined_rooms.size <= 0) return SimpleResult(true)
-        for (roomId in responseObject.joined_rooms) {
-            var roomName: String? = null
-            val response = restClient.get("$baseUrl/rooms/$roomId/state/m.room.name")
-            if(response == null) return SimpleResult(false, Error.SERVER_UNREACHABLE)
-            if(response.code != 200 && response.code != 404) return checkAndLogUnexpectedResponse(response)
-            if(response.code == 200) roomName = Json.decodeFromString(RoomNameResponse.serializer(), response.text).name
+    fun getJoinedRooms(): Result<List<Room>> {
+        val joinedRoomsResponse = joinedRoomsRequest()
+        if(!joinedRoomsResponse.success) return Result(false, joinedRoomsResponse.error)
+        val rooms = arrayListOf<Room>()
+        for (roomId in joinedRoomsResponse.value!!.joined_rooms) {
+            val roomNameResponse = roomNameRequest(roomId)
+            if(!roomNameResponse.success) return Result(false, roomNameResponse.error)
+            var roomName = roomNameResponse.value!!.name
             if(roomName == null) {
-                val response = restClient.get("$baseUrl/rooms/$roomId/joined_members")
-                if(response == null) return SimpleResult(false, Error.SERVER_UNREACHABLE)
-                if(response.code != 200 && response.code != 404) return checkAndLogUnexpectedResponse(response)
-                if(response.code != 200) return SimpleResult(false, Error.UNKNOWN)
-                val responseObject = Json.decodeFromString<JoinedMembersResponse>(response.text)
-                val members = responseObject.getMembers()
+                val joinedMembersResponse = joinedMembersRequest(roomId)
+                if(!joinedMembersResponse.success) return Result(false, joinedMembersResponse.error)
+                val members = joinedMembersResponse.value!!.getMembers()
                 var chatPartnerMember: Member? = null
                 for (member in members) {
                     if(member.userName == userName) continue
                     chatPartnerMember = member
                     break
                 }
-                if (chatPartnerMember == null) return SimpleResult(false, Error.UNKNOWN)
-                roomName = chatPartnerMember.display_name
+                if (chatPartnerMember == null) roomName = roomId
+                else roomName = chatPartnerMember.display_name
             }
-//            TODO: user room id and room name to add it to the joined rooms list
+            rooms.add(Room(roomId, roomName))
         }
-        return SimpleResult(true)
+        return Result(true, null, rooms)
     }
 
-    fun acceptAllInvites(): SimpleResult {
-        val client = RESTClient(context, accessToken)
-        val response = client.get("$baseUrl/sync")
-        if(response == null) return SimpleResult(false, Error.SERVER_UNREACHABLE)
-        if(response.code != 200) checkAndLogUnexpectedResponse(response)
-        val responseObject = Json.decodeFromString<SyncResponse>(response.text)
-        if(responseObject.rooms == null || responseObject.rooms.invite.isEmpty()) return SimpleResult(true)
-        for (roomId in responseObject.rooms.invite.keys) {
-            val response = client.post("$baseUrl/join/$roomId")
-            if (response == null) return SimpleResult(false, Error.UNKNOWN)
-            else if (response.code != 200) return SimpleResult(false, Error.UNKNOWN)
+    private fun joinedRoomsRequest(): Result<JoinedRoomsResponse> {
+        val url = "$baseUrl/joined_rooms"
+        var response = createAuthorizedRESTClient().get(url)
+        val checkResult = checkResponse(response)
+        if(!checkResult.success && checkResult.error == Error.UNAUTHORIZED && refreshToken != null) {
+            val result = refreshAccessToken()
+            if(!result.success) return result.toResult()
+            response = createAuthorizedRESTClient().get(url)
+            val checkResult = checkResponse(response)
+            if(!checkResult.success) return checkResult.toResult()
+        } else if(!checkResult.success) return checkResult.toResult()
+        try {
+            return Result(true, null, Json.decodeFromString<JoinedRoomsResponse>(response!!.text))
+        } catch (ex: Exception) {
+            val logLine = createExceptionLine("error while decoding joined rooms response: ", ex)
+            Log.e(javaClass.name, logLine)
+            LogSaver(context).save(logLine)
+            return Result(false, Error.UNEXPECTED_RESPONSE, null)
         }
-        return SimpleResult(true)
+    }
+
+    private fun joinedMembersRequest(roomId: String): Result<JoinedMembersResponse> {
+        val url = "$baseUrl/rooms/$roomId/joined_members"
+        var response = createAuthorizedRESTClient().get(url)
+        val checkResult = checkResponse(response)
+        if(!checkResult.success && checkResult.error == Error.UNAUTHORIZED && refreshToken != null) {
+            val result = refreshAccessToken()
+            if(!result.success) return result.toResult()
+            response = createAuthorizedRESTClient().get(url)
+            val checkResult = checkResponse(response)
+            if(!checkResult.success) return checkResult.toResult()
+        } else if (!checkResult.success && arrayListOf(Error.NOT_FOUND, Error.FORBIDDEN).indexOf(checkResult.error) == -1) return checkResult.toResult()
+        try {
+            if (arrayListOf(Error.NOT_FOUND, Error.FORBIDDEN).indexOf(checkResult.error) != -1) return Result(true, null, JoinedMembersResponse(null))
+            return Result(true, null, Json.decodeFromString<JoinedMembersResponse>(response!!.text))
+        } catch (ex: Exception) {
+            val logLine = createExceptionLine("error while decoding joined members response: ", ex)
+            Log.e(javaClass.name, logLine)
+            LogSaver(context).save(logLine)
+            return Result(false, Error.UNEXPECTED_RESPONSE, null)
+        }
+    }
+
+    private fun roomNameRequest(roomId: String): Result<RoomNameResponse> {
+        val url = "$baseUrl/rooms/$roomId/state/m.room.name"
+        var response = createAuthorizedRESTClient().get(url)
+        val checkResult = checkResponse(response)
+        if(!checkResult.success && checkResult.error == Error.UNAUTHORIZED && refreshToken != null) {
+            val result = refreshAccessToken()
+            if(!result.success) return result.toResult()
+            response = createAuthorizedRESTClient().get(url)
+            val checkResult = checkResponse(response)
+            if(!checkResult.success) return checkResult.toResult()
+        } else if(!checkResult.success && arrayListOf(Error.NOT_FOUND, Error.FORBIDDEN).indexOf(checkResult.error) == -1) return checkResult.toResult()
+        try {
+            if (arrayListOf(Error.NOT_FOUND, Error.FORBIDDEN).indexOf(checkResult.error) != -1) return Result(true, null, RoomNameResponse(null))
+            return Result(true, null, Json.decodeFromString<RoomNameResponse>(response!!.text))
+        } catch (ex: Exception) {
+            val logLine = createExceptionLine("error while decoding room name response: ", ex)
+            Log.e(javaClass.name, logLine)
+            LogSaver(context).save(logLine)
+            return Result(false, Error.UNEXPECTED_RESPONSE, null)
+        }
+    }
+
+    fun acceptAllInvites(): Result<Int> {
+        val response = syncRequest()
+        if(!response.success) return Result(false, response.error)
+        if(response.value!!.rooms == null || response.value!!.rooms!!.invite.isEmpty()) return Result(true, null, 0)
+        var acceptedInvites = 0
+        for (roomId in response.value!!.rooms!!.invite.keys) {
+            val joinResponse = joinRequest(roomId)
+            if(!response.success) return Result(false, response.error)
+            if(joinResponse.value!!) acceptedInvites += 1
+        }
+        return Result(true, null, acceptedInvites)
+    }
+
+    private fun syncRequest(): Result<SyncResponse> {
+        val url = "$baseUrl/sync"
+        var response = createAuthorizedRESTClient().get(url)
+        val checkResult = checkResponse(response)
+        if(!checkResult.success && checkResult.error == Error.UNAUTHORIZED && refreshToken != null) {
+            val result = refreshAccessToken()
+            if(!result.success) return result.toResult()
+            response = createAuthorizedRESTClient().get(url)
+            val checkResult = checkResponse(response)
+            if(!checkResult.success) return checkResult.toResult()
+        } else if(!checkResult.success) return checkResult.toResult()
+        try {
+            return Result(true, null, Json.decodeFromString<SyncResponse>(response!!.text))
+        } catch (ex: Exception) {
+            val logLine = createExceptionLine("error while decoding sync response: ", ex)
+            Log.e(javaClass.name, logLine)
+            LogSaver(context).save(logLine)
+            return Result(false, Error.UNEXPECTED_RESPONSE, null)
+        }
+    }
+
+    private fun joinRequest(roomId: String): Result<Boolean> {
+        val url = "$baseUrl/join/$roomId"
+        var response = createAuthorizedRESTClient().get(url)
+        val checkResult = checkResponse(response)
+        if(!checkResult.success && checkResult.error == Error.UNAUTHORIZED && refreshToken != null) {
+            val result = refreshAccessToken()
+            if(!result.success) return result.toResult()
+            response = createAuthorizedRESTClient().get(url)
+            val checkResult = checkResponse(response)
+            if(!checkResult.success) return checkResult.toResult()
+        } else if(!checkResult.success && arrayListOf(Error.NOT_FOUND, Error.FORBIDDEN).indexOf(checkResult.error) == -1) return checkResult.toResult()
+        if (arrayListOf(Error.NOT_FOUND, Error.FORBIDDEN).indexOf(checkResult.error) != -1) return Result(true, null,false)
+        return Result(true, null,true)
     }
 
     fun sendMessage(message: String): SimpleResult {
         val messageId = UUID.randomUUID().toString()
-        val firstResponse = sendMessageRequest(message, messageId)
-        if (firstResponse == null) return SimpleResult(false, Error.SERVER_UNREACHABLE)
-        if(firstResponse.code == 200) return SimpleResult(true)
-        if(firstResponse.code != 401) {
-            val logLine = "unknown response:\nCode:${firstResponse.code}\nText:${firstResponse.text}"
-            Log.e(javaClass.name, logLine)
-            LogSaver(context).save(logLine)
-            return SimpleResult(false, Error.UNKNOWN)
-        }
-
-        if (refreshToken == null) {
-            val logLine = "no refresh token for requesting another access token!"
-            Log.e(javaClass.name, logLine)
-            LogSaver(context).save(logLine)
-            return SimpleResult(false, Error.UNAUTHORIZED)
-        }
-
-        val previousAccessToken = accessToken
-        refreshAccessTokenRequest(refreshToken!!)
-        if (accessToken == previousAccessToken) {
-            val logLine = "access token didn't change!"
-            Log.e(javaClass.name, logLine)
-            LogSaver(context).save(logLine)
-            return SimpleResult(false, Error.UNAUTHORIZED)
-        }
-
-        val secondResponse = sendMessageRequest(message, messageId)
-        if (secondResponse == null) return SimpleResult(false, Error.SERVER_UNREACHABLE)
-        if(secondResponse.code == 200) return SimpleResult(true)
-        if(secondResponse.code != 401) {
-            val logLine = "unknown response:\nCode:${firstResponse.code}\nText:${firstResponse.text}"
-            Log.e(javaClass.name, logLine)
-            LogSaver(context).save(logLine)
-            return SimpleResult(false, Error.UNKNOWN)
-        }
-
-        val logLine = "new access token didn't work!"
-        Log.e(javaClass.name, logLine)
-        LogSaver(context).save(logLine)
-        return SimpleResult(false, Error.UNAUTHORIZED)
+        var response = sendMessageRequest(message, messageId)
+        val checkResult = checkResponse(response)
+        if(!checkResult.success && checkResult.error == Error.UNAUTHORIZED && refreshToken != null) {
+            val result = refreshAccessToken()
+            if(!result.success) return result
+            response = sendMessageRequest(message, messageId)
+            val checkResult = checkResponse(response)
+            if(!checkResult.success) return checkResult
+        } else if(!checkResult.success) return checkResult
+        return SimpleResult(true)
     }
 
-    private fun loginRequest(userName: String, password: String): SimpleResult {
+    fun login(userName: String, password: String): SimpleResult {
+        val response = loginRequest(userName, password)
+        val checkResult = checkResponse(response)
+        if(!checkResult.success) return checkResult
+        val loginResponse = Json.decodeFromString<SuccessfulLoginResponse>(response!!.text)
+        accessToken = loginResponse.access_token
+        refreshToken = loginResponse.refresh_token
+        return SimpleResult(true)
+    }
+
+    private fun refreshAccessToken(): SimpleResult {
+        if(refreshToken == null) return SimpleResult(false, Error.UNAUTHORIZED)
+        val response = refreshAccessTokenRequest(refreshToken!!)
+        val checkResult = checkResponse(response)
+        if (!checkResult.success) return checkResult
+        val refreshTokenResponse = Json.decodeFromString<SuccessfulRefreshTokenResponse>(response!!.text)
+        accessToken = refreshTokenResponse.access_token
+        if(refreshTokenResponse.refresh_token != null) this.refreshToken = refreshTokenResponse.refresh_token
+        return SimpleResult(true)
+    }
+
+    private fun createRoomRequst(request: CreateRoomRequest): RESTClient.Response? {
+        val url = "$baseUrl/createRoom"
+        return createAuthorizedRESTClient().post(url, request, CreateRoomRequest.serializer())
+    }
+
+    private fun sendMessageRequest(message: String, messageId: String): RESTClient.Response? {
+        val url = "$baseUrl/rooms/${targetRoom}/send/m.room.message/${messageId}"
+        val request = MessageRequest(body = message)
+        return createAuthorizedRESTClient().put(url, request, MessageRequest.serializer())
+    }
+
+    private fun loginRequest(userName: String, password: String): RESTClient.Response? {
         val url = "$baseUrl/login"
         val request = LoginRequest(
             identifier = Identifier(
@@ -176,52 +264,34 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
             ),
             password = password
         )
-        val response = RESTClient(context, accessToken).post(url, request, LoginRequest.serializer())
-        if (response == null) return SimpleResult(false, Error.SERVER_UNREACHABLE)
-        if (response.code == HttpURLConnection.HTTP_FORBIDDEN)
-            return SimpleResult(false, Error.UNAUTHORIZED)
-        if (response.code != 200) return checkAndLogUnexpectedResponse(response)
-        val loginResponse = Json.decodeFromString<SuccessfulLoginResponse>(response.text)
-        if(loginResponse.access_token == null || loginResponse.access_token == "") {
-            return SimpleResult(false, Error.UNEXPECTED_RESPONSE)
-        }
-        accessToken = loginResponse.access_token
-        refreshToken = loginResponse.refresh_token
-        return SimpleResult(true)
+        return createAuthorizedRESTClient().post(url, request, LoginRequest.serializer())
     }
 
-    private fun refreshAccessTokenRequest(refreshToken: String): SimpleResult {
+    private fun refreshAccessTokenRequest(refreshToken: String): RESTClient.Response? {
         val url = "$baseUrl/refresh"
         val request = RefreshTokenRequest(
             refresh_token = refreshToken
         )
-        val response = RESTClient(context).post(url, request, RefreshTokenRequest.serializer())
-        if (response == null) return SimpleResult(false, Error.SERVER_UNREACHABLE)
-        if (response.code != HttpURLConnection.HTTP_OK) return checkAndLogUnexpectedResponse(response)
-        val refreshTokenResponse = Json.decodeFromString<SuccessfulRefreshTokenResponse>(response.text)
-        if(refreshTokenResponse.access_token == null || refreshTokenResponse.access_token == "") {
-            return SimpleResult(false, Error.UNEXPECTED_RESPONSE)
-        }
-        accessToken = refreshTokenResponse.access_token
-        if(refreshTokenResponse.refresh_token != null) this.refreshToken = refreshTokenResponse.refresh_token
-        return SimpleResult(true)
+        return createUnauthorizedRESTClient().post(url, request, RefreshTokenRequest.serializer())
     }
 
-    private fun sendMessageRequest(message: String, messageId: String): RESTClient.Response? {
-        val url = "$baseUrl/rooms/${targetRoom}/send/m.room.message/${messageId}"
-        val request = MessageRequest(body = message)
-        return RESTClient(context, accessToken).put(url, request, MessageRequest.serializer(),)
-    }
-
-    private fun checkAndLogUnexpectedResponse(response: RESTClient.Response): SimpleResult {
-        if (response.code == HttpURLConnection.HTTP_UNAUTHORIZED || response.code == HttpURLConnection.HTTP_FORBIDDEN) {
-            return SimpleResult(false, Error.UNAUTHORIZED)
-        } else if (response.code == 429) {
-            return SimpleResult(false, Error.TOO_MANY_REQUESTS)
-        }
+    private fun checkResponse(response: RESTClient.Response?): SimpleResult {
+        if(response == null) return SimpleResult(false, Error.SERVER_UNREACHABLE)
+        else if(response.code == HttpURLConnection.HTTP_OK) return SimpleResult(true)
+        else if(response.code == HttpURLConnection.HTTP_NOT_FOUND) return SimpleResult(false, Error.NOT_FOUND)
+        else if(response.code == HttpURLConnection.HTTP_UNAUTHORIZED) return SimpleResult(false, Error.UNAUTHORIZED)
+        else if(response.code == HttpURLConnection.HTTP_FORBIDDEN) return SimpleResult(false, Error.FORBIDDEN)
+        else if (response.code == 429) return SimpleResult(false, Error.TOO_MANY_REQUESTS)
         val logLine = "Unexpected matrix server response:\nCode: ${response.code}\nText: ${response.text}"
         Log.e(javaClass.name, logLine)
         LogSaver(context).save(logLine)
         return SimpleResult(false, Error.UNEXPECTED_RESPONSE)
+    }
+
+    private fun createUnauthorizedRESTClient(): RESTClient { return RESTClient(context) }
+    private fun createAuthorizedRESTClient(): RESTClient { return RESTClient(context, accessToken) }
+
+    private fun createFullUserId(username: String): String {
+        return "@$username:$serverDomain"
     }
 }
