@@ -122,7 +122,7 @@ class AppActivity : ComponentActivity() {
 //        }
 //        storageData = loadedData
         Thread.sleep(3000)
-        loadingStatus = LoadingStatus.ERROR
+        loadingStatus = LoadingStatus.LOADED
     }
 
     private fun saveData() {

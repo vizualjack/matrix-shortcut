@@ -34,18 +34,18 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
     var refreshToken: String? = null
     var targetRoom: String? = null
 
-    constructor(context: Context, serverDomain: String, userName: String, accessToken: String, refreshToken: String) : this(context, serverDomain) {
+    constructor(context: Context, serverDomain: String, userName: String, accessToken: String, refreshToken: String?) : this(context, serverDomain) {
         this.userName = userName
         this.accessToken = accessToken
         this.refreshToken = refreshToken
     }
 
-    fun createRoom(name: String, visibility: RoomVisibility, username: String): Result<String> {
+    fun createRoom(name: String, visibility: RoomVisibility, inviteUserName: String): Result<String> {
         val response = createRoom(CreateRoomRequest(
             name,
             null,
             visibility.text,
-            arrayOf(createFullUserId(username))
+            arrayOf(createFullUserId(inviteUserName))
         ))
         if(!response.success) return Result(false, response.error)
         return Result(true, null, response.value!!.room_id)
