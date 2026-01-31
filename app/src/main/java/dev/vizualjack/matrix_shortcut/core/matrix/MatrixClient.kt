@@ -4,7 +4,6 @@ import android.content.Context
 import android.util.Log
 import dev.vizualjack.matrix_shortcut.core.LogSaver
 import dev.vizualjack.matrix_shortcut.core.createExceptionLine
-import dev.vizualjack.matrix_shortcut.core.data.MatrixConfig
 import kotlinx.serialization.json.Json
 import java.net.HttpURLConnection
 import java.util.UUID
@@ -41,33 +40,47 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
         this.refreshToken = refreshToken
     }
 
-    fun createRoom(name: String, visibility: RoomVisibility, username: String): SimpleResult {
-        return createRoom(CreateRoomRequest(
+    fun createRoom(name: String, visibility: RoomVisibility, username: String): Result<String> {
+        val response = createRoom(CreateRoomRequest(
             name,
             null,
             visibility.text,
             arrayOf(createFullUserId(username))
         ))
+        if(!response.success) return Result(false, response.error)
+        return Result(true, null, response.value!!.room_id)
     }
 
-    fun createPrivateChat(username: String): SimpleResult {
-        return createRoom(CreateRoomRequest(
+    fun createPrivateChat(username: String): Result<String> {
+        val response = createRoom(CreateRoomRequest(
             null,
             true,
             RoomVisibility.PRIVATE.text,
             arrayOf(createFullUserId(username))
         ))
+        if(!response.success) return Result(false, response.error)
+        return Result(true, null, response.value!!.room_id)
     }
 
-    private fun createRoom(request: CreateRoomRequest): SimpleResult {
-        val response = createRoomRequst(request)
-        val checkResult = checkResponse(response)
-        if(!checkResult.success && checkResult.error == Error.UNAUTHORIZED && refreshToken != null) {
+    private fun createRoom(request: CreateRoomRequest): Result<SuccessfulRoomCreationResponse> {
+        val firstResponse = createRoomRequst(request)
+        val firstCheckResult = checkResponse(firstResponse)
+        if(!firstCheckResult.success && firstCheckResult.error == Error.UNAUTHORIZED && refreshToken != null) {
             val result = refreshAccessToken()
-            if(!result.success) return result
+            if(!result.success) return result.toResult()
         }
-        else if(!checkResult.success) return checkResult
-        return checkResponse(createRoomRequst(request))
+        else if(!firstCheckResult.success) return firstCheckResult.toResult()
+        val secondResponse = createRoomRequst(request)
+        val secondCheckResult = checkResponse(secondResponse)
+        if(!secondCheckResult.success) return secondCheckResult.toResult()
+        try {
+            return Result(true, null, Json.decodeFromString<SuccessfulRoomCreationResponse>(secondResponse!!.text))
+        } catch (ex: Exception) {
+            val logLine = createExceptionLine("error while decoding room created response: ", ex)
+            Log.e(javaClass.name, logLine)
+            LogSaver(context).save(logLine)
+            return Result(false, Error.UNEXPECTED_RESPONSE, null)
+        }
     }
 
     fun getJoinedRooms(): Result<List<Room>> {

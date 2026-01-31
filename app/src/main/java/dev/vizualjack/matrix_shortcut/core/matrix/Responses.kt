@@ -45,3 +45,8 @@ data class SuccessfulRefreshTokenResponse(
     val access_token: String?,
     val refresh_token: String?,
 )
+
+@Serializable
+data class SuccessfulRoomCreationResponse(
+    val room_id: String
+)
