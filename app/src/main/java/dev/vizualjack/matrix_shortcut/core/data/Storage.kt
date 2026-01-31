@@ -17,7 +17,7 @@ class Storage(private val context: Context) {
         val file = File(context.filesDir, FILE_NAME)
         if(!file.exists()) {
             Log.i(javaClass.name, "${FILE_NAME} doesn't exist!")
-            return null
+            return StorageData(null, null)
         }
         try {
             val data = Json.decodeFromString<StorageData>(file.readText())

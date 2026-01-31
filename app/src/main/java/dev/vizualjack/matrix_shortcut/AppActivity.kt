@@ -13,12 +13,27 @@ import dev.vizualjack.matrix_shortcut.core.data.StorageData
 import dev.vizualjack.matrix_shortcut.core.LogSaver
 import dev.vizualjack.matrix_shortcut.ui.AppUI
 import dev.vizualjack.matrix_shortcut.ui.theme.AppTheme
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 import java.lang.Exception
 
 
 class AppActivity : ComponentActivity() {
+    enum class LoadingStatus {
+        LOADING,
+        LOADED,
+        ERROR
+    }
+
+    var loadingStatus: LoadingStatus = LoadingStatus.LOADING
+    private var storageData: StorageData = StorageData()
     private val exportActivity =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
@@ -46,11 +61,7 @@ class AppActivity : ComponentActivity() {
                         if(storageData.gestures != null && storageData.matrixConfig != null) Storage(applicationContext).saveData(storageData)
                     }
                     Log.i("MainActivity","Importing successful!")
-                    setContent {
-                        AppTheme {
-                            AppUI(this)
-                        }
-                    }
+                    refreshContent()
                 } catch (ex:Exception) {
                     val logLine = "error while importing: $ex\n${ex.stackTraceToString()}"
                     Log.e(javaClass.name,logLine)
@@ -77,12 +88,44 @@ class AppActivity : ComponentActivity() {
         runOnUiThread(Runnable { Toast.makeText(applicationContext, text, Toast.LENGTH_SHORT).show() })
     }
 
+    override fun onStop() {
+        super.onStop()
+        CoroutineScope(Dispatchers.IO).launch {
+            saveData()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        refreshContent()
+        CoroutineScope(Dispatchers.IO).launch {
+            loadData()
+            withContext(Dispatchers.Main) {
+                refreshContent()
+            }
+        }
+    }
+
+    private fun refreshContent() {
         setContent {
             AppTheme {
                 AppUI(this)
             }
         }
+    }
+
+    private fun loadData() {
+//        val loadedData = Storage(applicationContext).loadData()
+//        if(loadedData == null) {
+//            loadingStatus = LoadingStatus.ERROR
+//            return
+//        }
+//        storageData = loadedData
+        Thread.sleep(3000)
+        loadingStatus = LoadingStatus.ERROR
+    }
+
+    private fun saveData() {
+        Storage(applicationContext).saveData(storageData)
     }
 }

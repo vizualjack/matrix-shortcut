@@ -17,14 +17,20 @@ import androidx.navigation.compose.rememberNavController
 import dev.vizualjack.matrix_shortcut.core.data.Gesture
 import dev.vizualjack.matrix_shortcut.core.data.Storage
 import dev.vizualjack.matrix_shortcut.AppActivity
+import dev.vizualjack.matrix_shortcut.core.data.MatrixConfig
 import dev.vizualjack.matrix_shortcut.core.data.StorageData
 import dev.vizualjack.matrix_shortcut.ui.screen.GestureEdit
 import dev.vizualjack.matrix_shortcut.ui.screen.GestureList
+import dev.vizualjack.matrix_shortcut.ui.screen.LoadErrorScreen
+import dev.vizualjack.matrix_shortcut.ui.screen.LoadingScreen
+import dev.vizualjack.matrix_shortcut.ui.screen.MatrixConfigUI
 
 enum class Location() {
     Gestures,
     Gesture,
-    Settings
+    MatrixConfig,
+    Loading,
+    LoadError
 }
 
 @Composable
@@ -37,8 +43,13 @@ fun AppUI(
     var gestures by remember { mutableStateOf(emptyList<Gesture>()) }
     var selectedGesture: Gesture? = null
 
-    val storageData = Storage(activity.applicationContext).loadData() ?: StorageData()
-    if(storageData.gestures != null) gestures = storageData.gestures!!
+//    val storageData = Storage(activity.applicationContext).loadData() ?: StorageData()
+//    if(storageData.gestures != null) gestures = storageData.gestures!!
+
+    val startLocation: String
+    if(activity.loadingStatus == AppActivity.LoadingStatus.LOADING) startLocation = Location.Loading.name
+    else if(activity.loadingStatus == AppActivity.LoadingStatus.ERROR) startLocation = Location.LoadError.name
+    else startLocation = Location.Gestures.name
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -46,17 +57,17 @@ fun AppUI(
     ) {
         NavHost(
             navController = navController,
-            startDestination = Location.Gestures.name,
+            startDestination = startLocation,
         ) {
-//            composable(route = Location.Settings.name) {
-//                SettingsPage(activity,
-//                    SettingsStorage(activity.applicationContext).loadSettings(),
-//                    backAction = {
-//                        navController.backQueue.clear()
-//                        navController.navigate(Location.Gestures.name)
-//                    }
-//                )
-//            }
+            composable(route = Location.MatrixConfig.name) {
+                MatrixConfigUI(activity,
+                    MatrixConfig(), // SettingsStorage(activity.applicationContext).loadSettings(),
+                    backAction = {
+                        navController.backQueue.clear()
+                        navController.navigate(Location.Gestures.name)
+                    }
+                )
+            }
             composable(route = Location.Gestures.name) {
                 GestureList(
                     activity = activity,
@@ -73,7 +84,7 @@ fun AppUI(
                     },
                     onSettingsClick = {
                         navController.backQueue.clear()
-                        navController.navigate(Location.Settings.name)
+                        navController.navigate(Location.MatrixConfig.name)
                     }
                 )
             }
@@ -85,17 +96,19 @@ fun AppUI(
                         navController.navigate(Location.Gestures.name)
                     },
                     onSave = { gesture: Gesture ->
-                        if(!gestures.contains(gesture)) gestures.toMutableList().apply { add(gesture) }
-                        storageData.gestures = gestures
-                        Storage(activity.applicationContext).saveData(storageData)
+//                        if(!gestures.contains(gesture)) gestures.toMutableList().apply { add(gesture) }
+//                        storageData.gestures = gestures
+//                        Storage(activity.applicationContext).saveData(storageData)
                     },
                     onDelete = {
-                        gestures = gestures.toMutableList().apply { remove(selectedGesture) }
-                        navController.backQueue.clear()
-                        navController.navigate(Location.Gestures.name)
+//                        gestures = gestures.toMutableList().apply { remove(selectedGesture) }
+//                        navController.backQueue.clear()
+//                        navController.navigate(Location.Gestures.name)
                     }
                 )
             }
+            composable(route = Location.Loading.name) { LoadingScreen() }
+            composable(route = Location.LoadError.name) { LoadErrorScreen() }
         }
     }
 }
