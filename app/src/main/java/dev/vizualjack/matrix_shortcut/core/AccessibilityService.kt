@@ -1,20 +1,25 @@
 package dev.vizualjack.matrix_shortcut.core
 
-import android.accessibilityservice.AccessibilityGestureEvent
 import android.accessibilityservice.AccessibilityService
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
+import android.os.CombinedVibration
+import android.os.Handler
+import android.os.Looper
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.util.Log
 import android.view.KeyEvent
 import android.view.accessibility.AccessibilityEvent
-import dev.vizualjack.matrix_shortcut.core.data.Storage
-import java.lang.Exception
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+
 
 class AccessibilityService : AccessibilityService() {
 //    var screenOnTime: Long = 0
@@ -29,33 +34,42 @@ class AccessibilityService : AccessibilityService() {
 //    var lastKeyAction = KeyEvent.ACTION_UP
     var vibrator: Vibrator? = null
     var logSaver: LogSaver? = null
-//    var gestureDetector: GestureDetector? = null
 
+//    private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+//    val handler = Handler(Looper.getMainLooper())
+//    var gestureDetector: GestureDetector? = null
+    val screenOnReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            try {
+                if(intent.action == Intent.ACTION_SCREEN_ON) {
+                    onScreenOn()
+//                    screenOnTime = System.currentTimeMillis()
+//                    Log.i(javaClass.name, "screenOnTime: ${screenOnTime}")
+//                    reset()
+//                    vibrate(250L,VibrationEffect.EFFECT_DOUBLE_CLICK)
+                }
+            } catch (ex: Exception) {
+                val logLine = createExceptionLine("error at screenOnReceiver.onReceive: ", ex)
+//                Log.e(javaClass.name, logLine)
+//                logSaver?.save(logLine)
+                log(logLine)
+            }
+        }
+    }
+
+    private fun onScreenOn() {
+        vibrate(500L,VibrationEffect.DEFAULT_AMPLITUDE)
+        log("onScreenOn -> vibrate() called")
+    }
 
     override fun onServiceConnected() {
         super.onServiceConnected()
         logSaver = LogSaver(applicationContext)
         log("onServiceConnected")
-//        val filter = IntentFilter()
-//        filter.addAction("android.intent.action.SCREEN_OFF")
-//        filter.addAction("android.intent.action.SCREEN_ON")
-//        val receiver = object : BroadcastReceiver() {
-//            override fun onReceive(context: Context, intent: Intent) {
-//                try {
-//                    if(intent.action.toString() == "android.intent.action.SCREEN_ON") {
-//                        screenOnTime = System.currentTimeMillis()
-//                        Log.i(javaClass.name, "screenOnTime: ${screenOnTime}")
-//                        reset()
-//                        vibrate(250L,VibrationEffect.EFFECT_DOUBLE_CLICK)
-//                    }
-//                } catch (ex: Exception) {
-//                    val logLine = createExceptionLine("error in BroadcastReceiver.onReceive: ", ex)
-//                    Log.e(javaClass.name, logLine)
-//                    logSaver?.save(logLine)
-//                }
-//            }
-//        }
-//        registerReceiver(receiver, filter)
+        val filter = IntentFilter()
+        filter.addAction(Intent.ACTION_SCREEN_ON)
+        registerReceiver(screenOnReceiver, filter)
+        log("registered screen on receiver")
         initVibratorManager()
         log("vibrator manager successfully initialized: " + (vibrator != null).toString())
         log("onServiceConnected - done")
@@ -67,16 +81,26 @@ class AccessibilityService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        log("onAccessibilityEvent")
+//        ioScope.launch {
+//            log("onAccessibilityEvent - " + AccessibilityEvent.eventTypeToString(event!!.eventType))
+//        }
     }
 
     override fun onInterrupt() {
         log("onInterrupt")
     }
 
-    override fun onKeyEvent(event: KeyEvent?): Boolean {
-        log("onKeyEvent")
-        return super.onKeyEvent(event)
+//    override fun onKeyEvent(event: KeyEvent?): Boolean {
+//        ioScope.launch {
+//            log("onKeyEvent")
+//        }
+//        return super.onKeyEvent(event)
+//    }
+
+    override fun onDestroy() {
+        log("onDestroy")
+        unregisterReceiver(screenOnReceiver)
+        log("unregistered screen on receiver")
     }
 
 //    override fun onKeyEvent(event: KeyEvent?): Boolean {
