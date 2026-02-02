@@ -4,9 +4,9 @@ import android.content.Context
 import android.util.Log
 import dev.vizualjack.matrix_shortcut.core.LogSaver
 import dev.vizualjack.matrix_shortcut.core.createExceptionLine
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.json.Json
+import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
@@ -58,7 +58,8 @@ class RESTClient(val context: Context, val bearerToken: String? = null) {
 
     private fun <T> sendRequest(connection: HttpURLConnection, request: T, requestSerializer: SerializationStrategy<T>): Boolean {
         try {
-            val requestBodyJson: String? = Json.encodeToString(requestSerializer, request)
+            val json = Json {encodeDefaults = true}
+            val requestBodyJson: String = json.encodeToString(requestSerializer, request)
             val outputStream = DataOutputStream(connection.outputStream)
             outputStream.writeBytes(requestBodyJson)
             outputStream.flush()
@@ -75,7 +76,9 @@ class RESTClient(val context: Context, val bearerToken: String? = null) {
     private fun receiveResponse(connection: HttpURLConnection): Response? {
         var response: Response? = null
         try {
-            response = Response(connection.responseCode, connection.responseMessage)
+            val inputStream = if(connection.responseCode in 200..299) connection.inputStream else connection.errorStream
+            val content = inputStream.readBytes()
+            response = Response(connection.responseCode, content.decodeToString())
         } catch (ex: Exception) {
             val logLine = createExceptionLine("error while receiving response: ", ex)
             Log.e(javaClass.name, logLine)
@@ -89,11 +92,11 @@ class RESTClient(val context: Context, val bearerToken: String? = null) {
             val connection = URL(url).openConnection() as HttpURLConnection
             connection.connectTimeout = TIMEOUT
             connection.readTimeout = TIMEOUT
+            if(method != RequestMethod.GET) connection.doOutput = true
+            else connection.doInput = true
             connection.requestMethod = method.value
             if(method == RequestMethod.POST) connection.setRequestProperty("Content-Type", "application/json")
             if(bearerToken != null) connection.setRequestProperty("Authorization", "Bearer $bearerToken")
-            connection.doOutput = true
-            connection.doInput = true
             return connection
         } catch (ex: Exception) {
             val logLine = createExceptionLine("error while creating connection: ", ex)

@@ -79,7 +79,10 @@ fun GestureEdit(editGesture: Gesture?, onSave: (gesture: Gesture) -> Unit, onBac
         Row {
             Button(
                 enabled = editGesture != null,
-                onClick = { onDelete() },
+                onClick = {
+                    onDelete()
+                    onBack()
+              },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFBF0000))
             ) {
                 Text(text = "Delete")
@@ -93,6 +96,7 @@ fun GestureEdit(editGesture: Gesture?, onSave: (gesture: Gesture) -> Unit, onBac
                     gesture.message = message
                     gesture.gestureEntries = gestureEntries
                     onSave(gesture)
+                    onBack()
                 },
             ) {
                 Text(text = "Save")
@@ -235,6 +239,7 @@ fun KeyCodeDropdown(
                 onDismissRequest = { expanded = false }
             ) {
                 KeyCode.values().forEach {
+                    if(it == KeyCode.UNKNOWN) return@forEach
                     DropdownMenuItem(
                         text = { Text(text = it.text) },
                         onClick = {

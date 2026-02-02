@@ -16,8 +16,8 @@ data class Member(
 
 @Serializable
 data class Rooms(
-    val invite: Map<String, Unit>,
-    val join: Map<String, Unit>
+    val invite: Map<String, Unit>? = null,
+    val join: Map<String, Unit>? = null
 )
 
 @Serializable

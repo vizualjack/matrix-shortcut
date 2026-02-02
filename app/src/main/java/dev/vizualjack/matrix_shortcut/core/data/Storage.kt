@@ -20,7 +20,8 @@ class Storage(private val context: Context) {
             return StorageData(null, null)
         }
         try {
-            val data = Json.decodeFromString<StorageData>(file.readText())
+            val loadContent = file.readText()
+            val data = Json.decodeFromString<StorageData>(loadContent)
             Log.i(javaClass.name, "loaded successfully")
             return data
         } catch (ex: Exception) {
@@ -36,7 +37,8 @@ class Storage(private val context: Context) {
         Log.i(javaClass.name, "saving...")
         try {
             val file = File(context.filesDir, FILE_NAME)
-            file.writeText(Json.encodeToString(data))
+            val saveContent = Json.encodeToString(data)
+            file.writeText(saveContent)
             Log.i(javaClass.name, "saved")
         } catch (ex: Exception) {
             val logLine = createExceptionLine("error on saving: ", ex)

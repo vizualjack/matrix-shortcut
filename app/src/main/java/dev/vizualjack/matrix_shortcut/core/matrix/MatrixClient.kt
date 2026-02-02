@@ -11,6 +11,7 @@ import java.util.UUID
 
 class MatrixClient(val context: Context, val serverDomain: String?) {
     val baseUrl = "https://${serverDomain}/_matrix/client/v3"
+    val json = Json{ignoreUnknownKeys = true}
 
     enum class Error {
         UNKNOWN,
@@ -32,7 +33,6 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
     var userName: String? = null
     var accessToken: String? = null
     var refreshToken: String? = null
-    var targetRoom: String? = null
 
     constructor(context: Context, serverDomain: String, userName: String, accessToken: String, refreshToken: String?) : this(context, serverDomain) {
         this.userName = userName
@@ -40,41 +40,59 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
         this.refreshToken = refreshToken
     }
 
-    fun createRoom(name: String, visibility: RoomVisibility, inviteUserName: String): Result<String> {
-        val response = createRoom(CreateRoomRequest(
+    fun createRoom(name: String, inviteUserName: String): Result<String> {
+        val response = createRoom(
+            CreateRoomRequest(
             name,
-            null,
-            visibility.text,
             arrayOf(createFullUserId(inviteUserName))
-        ))
+        )
+        )
         if(!response.success) return Result(false, response.error)
         return Result(true, null, response.value!!.room_id)
     }
 
     fun createPrivateChat(username: String): Result<String> {
-        val response = createRoom(CreateRoomRequest(
-            null,
-            true,
-            RoomVisibility.PRIVATE.text,
+        val response = createDirectMessageRoom(CreateDirectMessageRequest(
             arrayOf(createFullUserId(username))
         ))
         if(!response.success) return Result(false, response.error)
         return Result(true, null, response.value!!.room_id)
     }
 
-    private fun createRoom(request: CreateRoomRequest): Result<SuccessfulRoomCreationResponse> {
-        val firstResponse = createRoomRequst(request)
-        val firstCheckResult = checkResponse(firstResponse)
+    private fun createDirectMessageRoom(request: CreateDirectMessageRequest): Result<SuccessfulRoomCreationResponse> {
+        var response = createDirectMessageRequst(request)
+        val firstCheckResult = checkResponse(response)
         if(!firstCheckResult.success && firstCheckResult.error == Error.UNAUTHORIZED && refreshToken != null) {
-            val result = refreshAccessToken()
-            if(!result.success) return result.toResult()
+            val refreshTokenResult = refreshAccessToken()
+            if(!refreshTokenResult.success) return refreshTokenResult.toResult()
+            response = createDirectMessageRequst(request)
+            val secondCheckResult = checkResponse(response)
+            if(!secondCheckResult.success) return secondCheckResult.toResult()
         }
         else if(!firstCheckResult.success) return firstCheckResult.toResult()
-        val secondResponse = createRoomRequst(request)
-        val secondCheckResult = checkResponse(secondResponse)
-        if(!secondCheckResult.success) return secondCheckResult.toResult()
         try {
-            return Result(true, null, Json.decodeFromString<SuccessfulRoomCreationResponse>(secondResponse!!.text))
+            return Result(true, null, json.decodeFromString<SuccessfulRoomCreationResponse>(response!!.text))
+        } catch (ex: Exception) {
+            val logLine = createExceptionLine("error while decoding room created response: ", ex)
+            Log.e(javaClass.name, logLine)
+            LogSaver(context).save(logLine)
+            return Result(false, Error.UNEXPECTED_RESPONSE, null)
+        }
+    }
+
+    private fun createRoom(request: CreateRoomRequest): Result<SuccessfulRoomCreationResponse> {
+        var response = createRoomRequst(request)
+        val firstCheckResult = checkResponse(response)
+        if(!firstCheckResult.success && firstCheckResult.error == Error.UNAUTHORIZED && refreshToken != null) {
+            val refreshTokenResult = refreshAccessToken()
+            if(!refreshTokenResult.success) return refreshTokenResult.toResult()
+            response = createRoomRequst(request)
+            val secondCheckResult = checkResponse(response)
+            if(!secondCheckResult.success) return secondCheckResult.toResult()
+        }
+        else if(!firstCheckResult.success) return firstCheckResult.toResult()
+        try {
+            return Result(true, null, json.decodeFromString<SuccessfulRoomCreationResponse>(response!!.text))
         } catch (ex: Exception) {
             val logLine = createExceptionLine("error while decoding room created response: ", ex)
             Log.e(javaClass.name, logLine)
@@ -121,7 +139,7 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
             if(!checkResult.success) return checkResult.toResult()
         } else if(!checkResult.success) return checkResult.toResult()
         try {
-            return Result(true, null, Json.decodeFromString<JoinedRoomsResponse>(response!!.text))
+            return Result(true, null, json.decodeFromString<JoinedRoomsResponse>(response!!.text))
         } catch (ex: Exception) {
             val logLine = createExceptionLine("error while decoding joined rooms response: ", ex)
             Log.e(javaClass.name, logLine)
@@ -143,7 +161,7 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
         } else if (!checkResult.success && arrayListOf(Error.NOT_FOUND, Error.FORBIDDEN).indexOf(checkResult.error) == -1) return checkResult.toResult()
         try {
             if (arrayListOf(Error.NOT_FOUND, Error.FORBIDDEN).indexOf(checkResult.error) != -1) return Result(true, null, JoinedMembersResponse(null))
-            return Result(true, null, Json.decodeFromString<JoinedMembersResponse>(response!!.text))
+            return Result(true, null, json.decodeFromString<JoinedMembersResponse>(response!!.text))
         } catch (ex: Exception) {
             val logLine = createExceptionLine("error while decoding joined members response: ", ex)
             Log.e(javaClass.name, logLine)
@@ -165,7 +183,7 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
         } else if(!checkResult.success && arrayListOf(Error.NOT_FOUND, Error.FORBIDDEN).indexOf(checkResult.error) == -1) return checkResult.toResult()
         try {
             if (arrayListOf(Error.NOT_FOUND, Error.FORBIDDEN).indexOf(checkResult.error) != -1) return Result(true, null, RoomNameResponse(null))
-            return Result(true, null, Json.decodeFromString<RoomNameResponse>(response!!.text))
+            return Result(true, null, json.decodeFromString<RoomNameResponse>(response!!.text))
         } catch (ex: Exception) {
             val logLine = createExceptionLine("error while decoding room name response: ", ex)
             Log.e(javaClass.name, logLine)
@@ -177,11 +195,11 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
     fun acceptAllInvites(): Result<Int> {
         val response = syncRequest()
         if(!response.success) return Result(false, response.error)
-        if(response.value!!.rooms == null || response.value!!.rooms!!.invite.isEmpty()) return Result(true, null, 0)
+        if(response.value!!.rooms == null || response.value!!.rooms!!.invite == null  || response.value!!.rooms!!.invite!!.isEmpty()) return Result(true, null, 0)
         var acceptedInvites = 0
-        for (roomId in response.value!!.rooms!!.invite.keys) {
+        for (roomId in response.value!!.rooms!!.invite!!.keys) {
             val joinResponse = joinRequest(roomId)
-            if(!response.success) return Result(false, response.error)
+            if(!joinResponse.success) return Result(false, response.error)
             if(joinResponse.value!!) acceptedInvites += 1
         }
         return Result(true, null, acceptedInvites)
@@ -199,7 +217,7 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
             if(!checkResult.success) return checkResult.toResult()
         } else if(!checkResult.success) return checkResult.toResult()
         try {
-            return Result(true, null, Json.decodeFromString<SyncResponse>(response!!.text))
+            return Result(true, null, json.decodeFromString<SyncResponse>(response!!.text))
         } catch (ex: Exception) {
             val logLine = createExceptionLine("error while decoding sync response: ", ex)
             Log.e(javaClass.name, logLine)
@@ -210,7 +228,7 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
 
     private fun joinRequest(roomId: String): Result<Boolean> {
         val url = "$baseUrl/join/$roomId"
-        var response = createAuthorizedRESTClient().get(url)
+        var response = createAuthorizedRESTClient().post(url)
         val checkResult = checkResponse(response)
         if(!checkResult.success && checkResult.error == Error.UNAUTHORIZED && refreshToken != null) {
             val result = refreshAccessToken()
@@ -223,14 +241,14 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
         return Result(true, null,true)
     }
 
-    fun sendMessage(message: String): SimpleResult {
+    fun sendMessage(roomId: String, message: String): SimpleResult {
         val messageId = UUID.randomUUID().toString()
-        var response = sendMessageRequest(message, messageId)
+        var response = sendMessageRequest(roomId, messageId, message)
         val checkResult = checkResponse(response)
         if(!checkResult.success && checkResult.error == Error.UNAUTHORIZED && refreshToken != null) {
             val result = refreshAccessToken()
             if(!result.success) return result
-            response = sendMessageRequest(message, messageId)
+            response = sendMessageRequest(roomId, messageId, message)
             val checkResult = checkResponse(response)
             if(!checkResult.success) return checkResult
         } else if(!checkResult.success) return checkResult
@@ -241,7 +259,7 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
         val response = loginRequest(userName, password)
         val checkResult = checkResponse(response)
         if(!checkResult.success) return checkResult
-        val loginResponse = Json.decodeFromString<SuccessfulLoginResponse>(response!!.text)
+        val loginResponse = Json{ignoreUnknownKeys = true}.decodeFromString<SuccessfulLoginResponse>(response!!.text)
         accessToken = loginResponse.access_token
         refreshToken = loginResponse.refresh_token
         return SimpleResult(true)
@@ -252,10 +270,15 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
         val response = refreshAccessTokenRequest(refreshToken!!)
         val checkResult = checkResponse(response)
         if (!checkResult.success) return checkResult
-        val refreshTokenResponse = Json.decodeFromString<SuccessfulRefreshTokenResponse>(response!!.text)
+        val refreshTokenResponse = json.decodeFromString<SuccessfulRefreshTokenResponse>(response!!.text)
         accessToken = refreshTokenResponse.access_token
         if(refreshTokenResponse.refresh_token != null) this.refreshToken = refreshTokenResponse.refresh_token
         return SimpleResult(true)
+    }
+
+    private fun createDirectMessageRequst(request: CreateDirectMessageRequest): RESTClient.Response? {
+        val url = "$baseUrl/createRoom"
+        return createAuthorizedRESTClient().post(url, request, CreateDirectMessageRequest.serializer())
     }
 
     private fun createRoomRequst(request: CreateRoomRequest): RESTClient.Response? {
@@ -263,8 +286,8 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
         return createAuthorizedRESTClient().post(url, request, CreateRoomRequest.serializer())
     }
 
-    private fun sendMessageRequest(message: String, messageId: String): RESTClient.Response? {
-        val url = "$baseUrl/rooms/${targetRoom}/send/m.room.message/${messageId}"
+    private fun sendMessageRequest(roomId: String, messageId: String,message: String, ): RESTClient.Response? {
+        val url = "$baseUrl/rooms/${roomId}/send/m.room.message/${messageId}"
         val request = MessageRequest(body = message)
         return createAuthorizedRESTClient().put(url, request, MessageRequest.serializer())
     }
@@ -275,9 +298,9 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
             identifier = Identifier(
                 user = "@$userName:$serverDomain"
             ),
-            password = password
+            password = password,
         )
-        return createAuthorizedRESTClient().post(url, request, LoginRequest.serializer())
+        return createUnauthorizedRESTClient().post(url, request, LoginRequest.serializer())
     }
 
     private fun refreshAccessTokenRequest(refreshToken: String): RESTClient.Response? {
@@ -294,6 +317,7 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
         else if(response.code == HttpURLConnection.HTTP_NOT_FOUND) return SimpleResult(false, Error.NOT_FOUND)
         else if(response.code == HttpURLConnection.HTTP_UNAUTHORIZED) return SimpleResult(false, Error.UNAUTHORIZED)
         else if(response.code == HttpURLConnection.HTTP_FORBIDDEN) return SimpleResult(false, Error.FORBIDDEN)
+        else if(response.code == HttpURLConnection.HTTP_BAD_METHOD) return SimpleResult(false, Error.UNKNOWN)
         else if (response.code == 429) return SimpleResult(false, Error.TOO_MANY_REQUESTS)
         val logLine = "Unexpected matrix server response:\nCode: ${response.code}\nText: ${response.text}"
         Log.e(javaClass.name, logLine)

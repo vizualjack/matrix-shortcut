@@ -4,12 +4,12 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class SyncResponse(
-    val rooms: Rooms?
+    val rooms: Rooms? = null
 )
 
 @Serializable
 data class RoomNameResponse(
-    val name: String?
+    val name: String? = null
 )
 
 @Serializable
@@ -36,14 +36,14 @@ data class JoinedMembersResponse(
 
 @Serializable
 data class SuccessfulLoginResponse(
-    val access_token: String?,
-    val refresh_token: String?,
+    val access_token: String,
+    val refresh_token: String? = null,
 )
 
 @Serializable
 data class SuccessfulRefreshTokenResponse(
     val access_token: String?,
-    val refresh_token: String?,
+    val refresh_token: String? = null,
 )
 
 @Serializable

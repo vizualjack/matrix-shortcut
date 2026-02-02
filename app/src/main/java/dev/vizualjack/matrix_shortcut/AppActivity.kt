@@ -15,11 +15,8 @@ import dev.vizualjack.matrix_shortcut.ui.AppUI
 import dev.vizualjack.matrix_shortcut.ui.theme.AppTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 import java.lang.Exception
@@ -33,7 +30,8 @@ class AppActivity : ComponentActivity() {
     }
 
     var loadingStatus: LoadingStatus = LoadingStatus.LOADING
-    private var storageData: StorageData = StorageData()
+
+    var storageData: StorageData? = null
     private val exportActivity =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
@@ -46,6 +44,7 @@ class AppActivity : ComponentActivity() {
                     outputStream.write(appDataAsString.toByteArray())
                 }
                 Log.i("MainActivity","Exporting successful!")
+                sendToastText("Exported data successfully!")
             }
         }
 
@@ -57,11 +56,15 @@ class AppActivity : ComponentActivity() {
                 val uri = data?.data ?:return@registerForActivityResult
                 try {
                     contentResolver.openInputStream(uri)?.use { outputStream ->
-                        val storageData = Json.decodeFromString<StorageData>(outputStream.readBytes().decodeToString())
-                        if(storageData.gestures != null && storageData.matrixConfig != null) Storage(applicationContext).saveData(storageData)
+                        storageData = StorageData()
+                        val loadedStorageData = Json.decodeFromString<StorageData>(outputStream.readBytes().decodeToString())
+                        if(loadedStorageData.gestures != null) storageData!!.gestures = loadedStorageData.gestures
+                        if(loadedStorageData.matrixConfig != null) storageData!!.matrixConfig = loadedStorageData.matrixConfig
+                        Storage(applicationContext).saveData(storageData!!)
                     }
-                    Log.i("MainActivity","Importing successful!")
                     refreshContent()
+                    Log.i("MainActivity","Importing successful!")
+                    sendToastText("Imported data successfully!")
                 } catch (ex:Exception) {
                     val logLine = "error while importing: $ex\n${ex.stackTraceToString()}"
                     Log.e(javaClass.name,logLine)
@@ -97,7 +100,7 @@ class AppActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        refreshContent()
+        setContentToAppUI()
         CoroutineScope(Dispatchers.IO).launch {
             loadData()
             withContext(Dispatchers.Main) {
@@ -106,7 +109,9 @@ class AppActivity : ComponentActivity() {
         }
     }
 
-    private fun refreshContent() {
+    private fun refreshContent() { setContentToAppUI() }
+
+    private fun setContentToAppUI() {
         setContent {
             AppTheme {
                 AppUI(this)
@@ -115,17 +120,16 @@ class AppActivity : ComponentActivity() {
     }
 
     private fun loadData() {
-//        val loadedData = Storage(applicationContext).loadData()
-//        if(loadedData == null) {
-//            loadingStatus = LoadingStatus.ERROR
-//            return
-//        }
-//        storageData = loadedData
-        Thread.sleep(3000)
+        storageData = Storage(applicationContext).loadData()
+        if(storageData == null) {
+            loadingStatus = LoadingStatus.ERROR
+            return
+        }
         loadingStatus = LoadingStatus.LOADED
     }
 
     private fun saveData() {
-        Storage(applicationContext).saveData(storageData)
+        if(storageData == null) return
+        Storage(applicationContext).saveData(storageData!!)
     }
 }

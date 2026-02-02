@@ -70,11 +70,17 @@ fun GestureList(activity:AppActivity, gestures: List<Gesture>, newGesture:() -> 
             ) {
                 DropdownMenuItem(
                     text = { Text(text = "Import") },
-                    onClick = { activity.importRequest() }
+                    onClick = {
+                        activity.importRequest()
+                        expanded = false
+                    }
                 )
                 DropdownMenuItem(
                     text = { Text(text = "Export") },
-                    onClick = { activity.exportRequest() }
+                    onClick = {
+                        activity.exportRequest()
+                        expanded = false
+                    }
                 )
             }
         }
@@ -124,7 +130,7 @@ fun GestureListEntry(gesture: Gesture, onClick: () -> Unit) {
             onClick()
         },
         contentAlignment = Alignment.Center) {
-        Text(text = AnnotatedString(gesture.message), color = Color.White )
+        Text(text = gesture.name, color = Color.White )
     }
 }
 

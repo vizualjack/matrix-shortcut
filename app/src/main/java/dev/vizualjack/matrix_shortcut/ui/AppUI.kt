@@ -15,10 +15,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import dev.vizualjack.matrix_shortcut.core.data.Gesture
-import dev.vizualjack.matrix_shortcut.core.data.Storage
 import dev.vizualjack.matrix_shortcut.AppActivity
 import dev.vizualjack.matrix_shortcut.core.data.MatrixConfig
-import dev.vizualjack.matrix_shortcut.core.data.StorageData
 import dev.vizualjack.matrix_shortcut.ui.screen.GestureEdit
 import dev.vizualjack.matrix_shortcut.ui.screen.GestureList
 import dev.vizualjack.matrix_shortcut.ui.screen.LoadErrorScreen
@@ -37,19 +35,25 @@ enum class Location() {
 fun AppUI(
     activity: AppActivity,
 ) {
-//    val viewModel: ViewModel = viewModel()
     val navController: NavHostController = rememberNavController()
 
-    var gestures by remember { mutableStateOf(emptyList<Gesture>()) }
+    var matrixConfig = remember { MatrixConfig() }
+    var gestures = remember { emptyList<Gesture>() }
     var selectedGesture: Gesture? = null
 
-//    val storageData = Storage(activity.applicationContext).loadData() ?: StorageData()
-//    if(storageData.gestures != null) gestures = storageData.gestures!!
+    fun onDataLoaded() {
+        if(activity.storageData == null) return
+        if(activity.storageData!!.gestures != null) gestures = activity.storageData!!.gestures!!
+        if(activity.storageData!!.matrixConfig != null) matrixConfig = activity.storageData!!.matrixConfig!!
+    }
 
     val startLocation: String
     if(activity.loadingStatus == AppActivity.LoadingStatus.LOADING) startLocation = Location.Loading.name
     else if(activity.loadingStatus == AppActivity.LoadingStatus.ERROR) startLocation = Location.LoadError.name
-    else startLocation = Location.Gestures.name
+    else {
+        startLocation = Location.Gestures.name
+        onDataLoaded()
+    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -61,8 +65,12 @@ fun AppUI(
         ) {
             composable(route = Location.MatrixConfig.name) {
                 MatrixConfigUI(activity,
-                    MatrixConfig(), // SettingsStorage(activity.applicationContext).loadSettings(),
-                    backAction = {
+                    matrixConfig,
+                    onSave = { newConfig: MatrixConfig ->
+                        matrixConfig = newConfig
+                        activity.storageData!!.matrixConfig = matrixConfig
+                    },
+                    onBack = {
                         navController.backQueue.clear()
                         navController.navigate(Location.Gestures.name)
                     }
@@ -96,14 +104,12 @@ fun AppUI(
                         navController.navigate(Location.Gestures.name)
                     },
                     onSave = { gesture: Gesture ->
-//                        if(!gestures.contains(gesture)) gestures.toMutableList().apply { add(gesture) }
-//                        storageData.gestures = gestures
-//                        Storage(activity.applicationContext).saveData(storageData)
+                        if(!gestures.contains(gesture)) gestures = gestures.toMutableList().apply { add(gesture) }
+                        activity.storageData!!.gestures = gestures
                     },
                     onDelete = {
-//                        gestures = gestures.toMutableList().apply { remove(selectedGesture) }
-//                        navController.backQueue.clear()
-//                        navController.navigate(Location.Gestures.name)
+                        gestures = gestures.toMutableList().apply { remove(selectedGesture) }
+                        activity.storageData!!.gestures = gestures
                     }
                 )
             }

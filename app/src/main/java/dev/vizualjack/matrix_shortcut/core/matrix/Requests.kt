@@ -26,10 +26,16 @@ enum class RoomVisibility(val text: String) {
 }
 
 @Serializable
-data class CreateRoomRequest(
-    val name: String?,
-    val is_direct: Boolean?,
-    val visibility: String?,
+data class CreateDirectMessageRequest(
     val invite: Array<String>? = null,
-    val preset: String? = null,
+    val is_direct: Boolean = true,
+    val visibility: String = RoomVisibility.PRIVATE.text,
+)
+
+@Serializable
+data class CreateRoomRequest(
+    val name: String,
+    val invite: Array<String>,
+    val visibility: String = RoomVisibility.PRIVATE.text,
+    val is_direct: Boolean = false,
 )
