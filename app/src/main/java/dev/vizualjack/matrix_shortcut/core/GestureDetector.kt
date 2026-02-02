@@ -18,7 +18,7 @@ class GestureDetector(
         return gestures.size == 1
     }
 
-    fun getUniqueMatchActionName():String? {
+    fun getUniqueMatchMessage():String? {
         if (!hasUniqueMatch()) return null
         return gestures[0].message
     }
