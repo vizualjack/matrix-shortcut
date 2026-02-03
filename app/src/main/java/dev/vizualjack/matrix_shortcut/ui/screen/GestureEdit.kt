@@ -34,6 +34,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
@@ -45,17 +46,13 @@ import dev.vizualjack.matrix_shortcut.ui.components.EditNumberField
 import dev.vizualjack.matrix_shortcut.ui.components.EditStringField
 import dev.vizualjack.matrix_shortcut.ui.theme.AppTheme
 
+
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun GestureEdit(editGesture: Gesture?, onSave: (gesture: Gesture) -> Unit, onBack: () -> Unit, onDelete: () -> Unit) {
-    var name by remember { mutableStateOf("") }
-    var message by remember { mutableStateOf("") }
-    var gestureEntries by remember { mutableStateOf(arrayListOf<GestureEntry>()) }
-
-    if(editGesture != null) {
-        name = editGesture.name
-        message = editGesture.message
-        gestureEntries = editGesture.gestureEntries
-    }
+    var name by remember { mutableStateOf(if(editGesture != null) editGesture.name else "") }
+    var message by remember { mutableStateOf(if(editGesture != null) editGesture.message else "") }
+    var gestureEntries by remember { mutableStateOf(if(editGesture != null) editGesture.gestureEntries else arrayListOf()) }
 
     Box(
         modifier = Modifier

@@ -35,7 +35,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.autofill.AutofillType
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Matrix
 import androidx.compose.ui.text.style.TextAlign
@@ -63,6 +65,7 @@ enum class ShownPopup {
     ROOM_SELECTOR
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config: MatrixConfig) -> Unit, onBack:() -> Unit) {
     var serverDomain by rememberSaveable { mutableStateOf(config.serverDomain) }
@@ -229,6 +232,7 @@ enum class LoginStatus(val text: String) {
     TOO_MANY_REQUESTS("Server got too many requests, try again later"),
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun LoginPopup(context: Context?, serverDomain: String, onClose: () -> Unit, onSuccessLogin: (loginData: LoginData) -> Unit) {
     var userName by rememberSaveable { mutableStateOf("") }
@@ -297,14 +301,17 @@ fun LoginPopup(context: Context?, serverDomain: String, onClose: () -> Unit, onS
                 EditStringField(text = "username",
                     value = userName,
                     onValueChanged = {userName = it.trim()},
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    hidden = false,
+                    autofillType = AutofillType.Username
                 )
                 Spacer(modifier = Modifier.height(10.dp))
                 EditStringField(text = "password",
                     value = password,
                     onValueChanged = {password = it.trim()},
                     modifier = Modifier.fillMaxWidth(),
-                    hidden = true
+                    hidden = true,
+                    autofillType = AutofillType.Password
                 )
                 Spacer(modifier = Modifier.height(5.dp))
                 Text(
@@ -346,6 +353,7 @@ enum class CreateStatus(val text: String) {
     UNKNOWN("Unknown error!"),
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun RoomCreatorPopup(context: Context?, serverDomain: String, userName: String, accessToken: String, refreshToken: String?, onClose: () -> Unit, onRoomCreated: (roomId: String) -> Unit) {
     var roomName by rememberSaveable { mutableStateOf("") }

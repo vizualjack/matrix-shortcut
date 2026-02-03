@@ -14,13 +14,28 @@ class GestureDetector(
         cleanUpMissedGestures()
     }
 
-    fun hasUniqueMatch(): Boolean {
-        return gestures.size == 1
+    fun canStillMatch(): Boolean {
+        return gestures.size > 0
     }
 
-    fun getUniqueMatchMessage():String? {
-        if (!hasUniqueMatch()) return null
+    fun hasMatch(): Boolean {
+        if(gestures.size != 1) return false
+        return checkIfInputTotallyMatches(gestures[0])
+    }
+
+    fun getMessageOfMatch():String? {
+        if (!hasMatch()) return null
         return gestures[0].message
+    }
+
+    private fun checkIfInputTotallyMatches(gesture: Gesture): Boolean {
+        if(gesture.gestureEntries.size != gestureInputs.size) return false
+        for (index in 0..gesture.gestureEntries.size - 1) {
+            val inputEntry = gestureInputs[index]
+            val gestureEntry = gesture.gestureEntries[index]
+            if(inputEntry.duration < gestureEntry.minDuration || inputEntry.keyCode != gestureEntry.keyCode) return false
+        }
+        return true
     }
 
     private fun cleanUpMissedGestures() {

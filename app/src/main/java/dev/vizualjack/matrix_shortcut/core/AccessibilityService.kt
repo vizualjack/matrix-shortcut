@@ -6,15 +6,15 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
-import android.os.CombinedVibration
-import android.os.Handler
-import android.os.Looper
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.util.Log
 import android.view.KeyEvent
 import android.view.accessibility.AccessibilityEvent
+import dev.vizualjack.matrix_shortcut.core.data.MatrixConfig
+import dev.vizualjack.matrix_shortcut.core.data.Storage
+import dev.vizualjack.matrix_shortcut.core.matrix.MatrixClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -22,44 +22,32 @@ import kotlinx.coroutines.launch
 
 
 class AccessibilityService : AccessibilityService() {
-//    var screenOnTime: Long = 0
-//    var checkForGesture: Boolean = true
-//    var isTracking: Boolean = false
-//    val START_TIMEOUT = 2000
-//    val KEYUP_TO_KEYDOWN_TIMEOUT = 400
-//    val MATCH_CHECK_INTERVAL = 100
-//    var currentKeyCode: Int = 0
-//    var keyDownTime: Long = 0
-//    var keyUpTime: Long = 0
-//    var lastKeyAction = KeyEvent.ACTION_UP
-    var vibrator: Vibrator? = null
-    var logSaver: LogSaver? = null
+    private val START_TIMEOUT = 3000
+    private val workScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val logScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-//    private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-//    val handler = Handler(Looper.getMainLooper())
-//    var gestureDetector: GestureDetector? = null
-    val screenOnReceiver = object : BroadcastReceiver() {
+    private var screenOnTime: Long = 0
+    private var keyDownKey: Int = 0
+    private var keyDownTime: Long = 0
+    private var keyUpTime: Long = 0
+
+    private var vibrator: Vibrator? = null
+    private var logSaver: LogSaver? = null
+
+    private var gestureDetector: GestureDetector? = null
+    private var matrixConfig: MatrixConfig? = null
+
+    private val screenOnReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             try {
                 if(intent.action == Intent.ACTION_SCREEN_ON) {
                     onScreenOn()
-//                    screenOnTime = System.currentTimeMillis()
-//                    Log.i(javaClass.name, "screenOnTime: ${screenOnTime}")
-//                    reset()
-//                    vibrate(250L,VibrationEffect.EFFECT_DOUBLE_CLICK)
                 }
             } catch (ex: Exception) {
                 val logLine = createExceptionLine("error at screenOnReceiver.onReceive: ", ex)
-//                Log.e(javaClass.name, logLine)
-//                logSaver?.save(logLine)
                 log(logLine)
             }
         }
-    }
-
-    private fun onScreenOn() {
-        vibrate(500L,VibrationEffect.DEFAULT_AMPLITUDE)
-        log("onScreenOn -> vibrate() called")
     }
 
     override fun onServiceConnected() {
@@ -80,22 +68,9 @@ class AccessibilityService : AccessibilityService() {
         return false
     }
 
-    override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-//        ioScope.launch {
-//            log("onAccessibilityEvent - " + AccessibilityEvent.eventTypeToString(event!!.eventType))
-//        }
-    }
-
     override fun onInterrupt() {
         log("onInterrupt")
     }
-
-//    override fun onKeyEvent(event: KeyEvent?): Boolean {
-//        ioScope.launch {
-//            log("onKeyEvent")
-//        }
-//        return super.onKeyEvent(event)
-//    }
 
     override fun onDestroy() {
         log("onDestroy")
@@ -103,156 +78,110 @@ class AccessibilityService : AccessibilityService() {
         log("unregistered screen on receiver")
     }
 
-//    override fun onKeyEvent(event: KeyEvent?): Boolean {
-//        try {
-//            if(event == null || !checkForGesture && !isTracking) return super.onKeyEvent(event)
-//            if(!isTracking) checkForStartTracking(event)
-//            if(!isTracking) return super.onKeyEvent(event)
-//            if(event.action == KeyEvent.ACTION_DOWN) onKeyDown(event.keyCode)
-//            else onKeyUp()
-//            lastKeyAction = event.action
-//            return super.onKeyEvent(event)
-//        } catch (ex: Exception) {
-//            val logLine = createExceptionLine("exception in onKeyEvent: ", ex)
-//            Log.e(javaClass.name, logLine)
-//            logSaver?.save(logLine)
-//            return super.onKeyEvent(event)
-//        }
-//    }
+    private fun onScreenOn() {
+        workScope.launch {
+            if(reload()) log("loaded newest storage data")
+            else log("couldn't load newest storage data")
+            screenOnTime = System.currentTimeMillis()
+            log("set screen on time: $screenOnTime")
+            vibrate(100L, 1)
+            log("screen on vibration fired")
+        }
+    }
 
-//    private fun reset() {
-//        gestureDetector = null
-//        checkForGesture = true
-//        keyUpTime = 0
-//    }
+    private fun reload(): Boolean {
+        val storageData = Storage(applicationContext).loadData()
+        if(storageData == null) {
+            log("missing storage data")
+            return false
+        } else if (storageData.gestures == null) {
+            log("missing gestures data")
+            return false
+        } else if (storageData.matrixConfig == null) {
+            log("missing matrix config data")
+            return false
+        }
+        gestureDetector = GestureDetector(ArrayList(storageData.gestures!!))
+        matrixConfig = storageData.matrixConfig
+        return true
+    }
 
-//    private fun reloadGestures() {
-//        val storageData = Storage(applicationContext).loadData()
-//        if(storageData == null) {
-//            val logLine = "no storage data available while reloading gestures!"
-//            Log.e(javaClass.name, logLine)
-//            logSaver?.save(logLine)
-//            return
-//        } else if(storageData.gestures == null) {
-//            val logLine = "no gestures availabe while reloading gestures!"
-//            Log.e(javaClass.name, logLine)
-//            logSaver?.save(logLine)
-//            return
-//        }
-//        gestureDetector = GestureDetector(ArrayList(storageData.gestures!!))
-//        Log.i(javaClass.name, "gestures reloaded")
-//    }
+    override fun onKeyEvent(event: KeyEvent?): Boolean {
+        workScope.launch {
+            if(event == null || gestureDetector == null || matrixConfig == null) return@launch
+            log("onKeyEvent started")
+            val eventTime = System.currentTimeMillis()
+            if(isFirstCapturedKeyEvent() && !isFirstKeyInTime(eventTime)) {
+                onDoneDetectingGesture()
+                log("onKeyEvent started to late, finished detecting")
+                return@launch
+            }
+            if(event.action == KeyEvent.ACTION_DOWN) onKeyDown(event, eventTime)
+            else if(event.action == KeyEvent.ACTION_UP) onKeyUp(event, eventTime)
+            log("onKeyEvent finished")
+        }
+        return false
+    }
 
-//    private fun checkForStartTracking(event: KeyEvent) {
-//        checkForGesture = false
-//        if(event.action == KeyEvent.ACTION_UP) {
-//            isTracking = false
-//            return
-//        }
-//        var timeBetween = System.currentTimeMillis() - screenOnTime
-//        Log.i(javaClass.name, "timeBetween: $timeBetween")
-//        isTracking = timeBetween <= START_TIMEOUT
-//        if(isTracking) {
-//            Log.i(javaClass.name, "tracking started...")
-//            reloadGestures()
-//            startCheckDoneThread()
-//        }
-//    }
+    private fun onKeyDown(event: KeyEvent, eventTime: Long) {
+        keyDownTime = eventTime
+        keyDownKey = event.keyCode
+        log("onKeyDown")
+    }
 
-//    private fun checkForTimeout() {
-//        if(keyUpTime <= 0) return
-//        val keyUpToKeyDownTime = keyDownTime - keyUpTime
-//        Log.i(javaClass.name, "keyUpToKeyDownTime: $keyUpToKeyDownTime")
-//        if (keyUpToKeyDownTime <= KEYUP_TO_KEYDOWN_TIMEOUT) return
-//        Log.i(javaClass.name, "keyup to keydown timeout reached!")
-//        isTracking = false
-//    }
+    private fun onKeyUp(event: KeyEvent, eventTime: Long) {
+        if(keyDownTime == 0L || event.keyCode != keyDownKey) return
+        val keyDownDuration = eventTime - keyDownTime
+        gestureDetector!!.addGestureInput(keyDownKey, keyDownDuration.toInt())
+        if(gestureDetector!!.hasMatch() || !gestureDetector!!.canStillMatch()) onDoneDetectingGesture()
+        log("onKeyUp")
+    }
 
-//    private fun onKeyDown(keyCode: Int) {
-//        keyDownTime = System.currentTimeMillis()
-//        currentKeyCode = keyCode
-//        checkForTimeout()
-//    }
+    private fun isFirstKeyInTime(eventTime: Long): Boolean {
+        val neededTime = eventTime - screenOnTime
+        return neededTime <= START_TIMEOUT
+    }
 
-//    private fun onKeyUp() {
-//        if(gestureDetector == null) {
-//            val logLine = "no gesture detector available!"
-//            Log.e(javaClass.name, logLine)
-//            logSaver?.save(logLine)
-//            return
-//        }
-//        keyUpTime = System.currentTimeMillis()
-//        val duration = keyUpTime - keyDownTime
-//        Log.i(javaClass.name, "key $currentKeyCode pressed for $duration")
-//        gestureDetector!!.addGestureInput(currentKeyCode, duration.toInt())
-//        if(!gestureDetector!!.hasUniqueMatch()) return
-//        val actionName = gestureDetector!!.getUniqueMatchMessage() ?: return
-//        sendMessage(actionName)
-//        Log.i(javaClass.name, "found match: $actionName")
-//        isTracking = false
-//    }
+    private fun isFirstCapturedKeyEvent(): Boolean {
+        return keyDownTime == 0L && keyUpTime == 0L
+    }
 
-//    private fun startCheckDoneThread() {
-//        try {
-//            val checkThread = Thread(Runnable {
-//                try {
-//                    Log.i(javaClass.name, "checkThread started...")
-//                    if(gestureDetector == null) {
-//                        val logLine = "no gesture detector available in checkThread!"
-//                        Log.e(javaClass.name, logLine)
-//                        logSaver?.save(logLine)
-//                        return@Runnable
-//                    }
-//                    while(true) {
-//                        Thread.sleep(MATCH_CHECK_INTERVAL.toLong())
-//                        if(!isTracking) {
-//                            Log.i(javaClass.name, "tracking already done")
-//                            return@Runnable
-//                        }
-//                        Log.i(javaClass.name, "check if done")
-//                        val timeSinceLastKeyUp = System.currentTimeMillis() - keyUpTime
-//                        if (timeSinceLastKeyUp > KEYUP_TO_KEYDOWN_TIMEOUT && lastKeyAction == KeyEvent.ACTION_UP) {
-//                            isTracking = false
-//                            Log.i(javaClass.name, "done! check for match...")
-//                            val actionName = gestureDetector!!.getUniqueMatchMessage()
-//                            if (actionName != null) sendMessage(actionName)
-//                            return@Runnable
-//                        }
-//                    }
-//                } catch (ex: Exception) {
-//                    val logLine = createExceptionLine("error in checkThread: ", ex)
-//                    Log.e(javaClass.name, logLine)
-//                    logSaver?.save(logLine)
-//                }
-//            })
-//            checkThread.start()
-//        } catch (ex: Exception) {
-//            val logLine = createExceptionLine("error in startCheckDoneThread: ", ex)
-//            Log.e(javaClass.name, logLine)
-//            logSaver?.save(logLine)
-//        }
-//    }
+    private fun onDoneDetectingGesture() {
+        if(gestureDetector!!.hasMatch()) {
+            sendMessage(gestureDetector!!.getMessageOfMatch()!!)
+            vibrate(250L, 1)
+        }
+        gestureDetector = null
+        matrixConfig = null
+        keyUpTime = 0
+        keyDownTime = 0
+        screenOnTime = 0
+    }
 
-//    private fun sendMessage(actionName: String) {
-//        Log.i(javaClass.name, "sending action: $actionName")
-//        try {
-//            vibrate(250L,VibrationEffect.DEFAULT_AMPLITUDE)
-//            val storageData = Storage(applicationContext).loadData()
-//            if (storageData == null) {
-//                val logLine = "no storage data available while sending action!"
-//                Log.e(javaClass.name, logLine)
-//                logSaver?.save(logLine)
-//                return
-//            }
-//            val settings = storageData.matrixConfig ?: return
-////            sendToMatrixServer(settings, actionName, context = applicationContext)
-//            Log.i(javaClass.name, "sent action: $actionName")
-//        } catch (ex: Exception) {
-//            val logLine = createExceptionLine("error while sending action: ", ex)
-//            Log.e(javaClass.name, logLine)
-//            logSaver?.save(logLine)
-//        }
-//    }
+    private fun sendMessage(message: String) {
+        if(matrixConfig == null || !isMatrixConfigComplete(matrixConfig!!)) return
+        val matrixClient = MatrixClient(applicationContext, matrixConfig!!.serverDomain!!, matrixConfig!!.userName!!, matrixConfig!!.accessToken!!, matrixConfig!!.refreshToken)
+        val result = matrixClient.sendMessage(matrixConfig!!.targetRoom!!, message)
+        if(result.success) log("sending message to matrix server was successful!")
+        else log("sending message to matrix server was NOT successful! error: ${result.error}")
+    }
+
+    private fun isMatrixConfigComplete(matrixConfig: MatrixConfig): Boolean {
+        if(matrixConfig.serverDomain == null) {
+            log("server domain in matrix config is missing!")
+            return false
+        } else if(matrixConfig.userName == null) {
+            log("user name in matrix config is missing!")
+            return false
+        } else if(matrixConfig.accessToken == null) {
+            log("access token in matrix config is missing!")
+            return false
+        } else if(matrixConfig.targetRoom == null) {
+            log("target room in matrix config is missing!")
+            return false
+        }
+        return true
+    }
 
     private fun initVibratorManager() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -262,20 +191,22 @@ class AccessibilityService : AccessibilityService() {
         else vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
     }
 
-    private fun vibrate(durationMillis: Long, vibrationEffect: Int) {
+    private fun vibrate(durationMillis: Long, vibrationAmplitude: Int) {
         try {
             if (vibrator == null) initVibratorManager()
-            if(vibrator != null) vibrator!!.vibrate(VibrationEffect.createOneShot(durationMillis,vibrationEffect))
+            if(vibrator != null) vibrator!!.vibrate(VibrationEffect.createOneShot(durationMillis, vibrationAmplitude))
         } catch (ex: Exception) {
             val logLine = createExceptionLine("error in vibrate: ", ex)
-//            Log.e(javaClass.name, logLine)
-//            logSaver?.save(logLine)
             log(logLine)
         }
     }
 
     private fun log(message: String) {
-        Log.i(javaClass.name, message)
-        logSaver?.save(message)
+        logScope.launch {
+            Log.i(javaClass.name, message)
+            logSaver?.save(message)
+        }
     }
+
+    override fun onAccessibilityEvent(event: AccessibilityEvent?) {}
 }
