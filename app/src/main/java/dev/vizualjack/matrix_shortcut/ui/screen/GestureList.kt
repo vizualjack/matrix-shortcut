@@ -24,6 +24,7 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -35,11 +36,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import dev.vizualjack.matrix_shortcut.core.data.Gesture
 import dev.vizualjack.matrix_shortcut.AppActivity
+import dev.vizualjack.matrix_shortcut.R
 import dev.vizualjack.matrix_shortcut.ui.theme.AppTheme
 
 
@@ -50,7 +53,6 @@ fun GestureList(activity:AppActivity, gestures: List<Gesture>, newGesture:() -> 
 
     Box(
         modifier = Modifier
-//            .fillMaxSize()
             .padding(16.dp),
         contentAlignment = Alignment.TopStart
     ) {
@@ -64,19 +66,19 @@ fun GestureList(activity:AppActivity, gestures: List<Gesture>, newGesture:() -> 
                 Icon(imageVector = Icons.Default.List, contentDescription = "Menu", Modifier.size(30.dp))
             }
             ExposedDropdownMenu(
-                modifier = Modifier.width(100.dp),
+                modifier = Modifier.width(100.dp).background(colorResource(R.color.dropdown)),
                 expanded = expanded,
-                onDismissRequest = {expanded = false}
+                onDismissRequest = {expanded = false},
             ) {
                 DropdownMenuItem(
-                    text = { Text(text = "Import") },
+                    text = { Text(text = "Import", color = colorResource(R.color.text)) },
                     onClick = {
                         activity.importRequest()
                         expanded = false
-                    }
+                    },
                 )
                 DropdownMenuItem(
-                    text = { Text(text = "Export") },
+                    text = { Text(text = "Export", color = colorResource(R.color.text)) },
                     onClick = {
                         activity.exportRequest()
                         expanded = false
@@ -114,6 +116,8 @@ fun GestureList(activity:AppActivity, gestures: List<Gesture>, newGesture:() -> 
         Spacer(modifier = Modifier.height(10.dp))
         SmallFloatingActionButton(
             onClick = { newGesture() },
+            containerColor = colorResource(R.color.buttons),
+            contentColor = colorResource(R.color.text)
         ) {
             Icon(Icons.Filled.Add, "Add gesture element")
         }
@@ -125,12 +129,12 @@ fun GestureListEntry(gesture: Gesture, onClick: () -> Unit) {
     Box(modifier = Modifier.height(40.dp)
         .fillMaxWidth()
         .padding(2.dp)
-        .background(MaterialTheme.colorScheme.onPrimaryContainer, RoundedCornerShape(10.dp))
+        .background(colorResource(R.color.buttons), RoundedCornerShape(10.dp))
         .clickable {
             onClick()
         },
         contentAlignment = Alignment.Center) {
-        Text(text = gesture.name, color = Color.White )
+        Text(text = gesture.name, color = colorResource(R.color.text) )
     }
 }
 

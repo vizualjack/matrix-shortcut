@@ -1,7 +1,11 @@
 package dev.vizualjack.matrix_shortcut.ui
 
 
+import androidx.compose.foundation.layout.absolutePadding
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -10,6 +14,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -62,6 +67,7 @@ fun AppUI(
         NavHost(
             navController = navController,
             startDestination = startLocation,
+            modifier = Modifier.systemBarsPadding()
         ) {
             composable(route = Location.MatrixConfig.name) {
                 MatrixConfigUI(activity,

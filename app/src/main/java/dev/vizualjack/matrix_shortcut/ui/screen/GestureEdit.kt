@@ -15,7 +15,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -37,11 +36,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import dev.vizualjack.matrix_shortcut.R
 import dev.vizualjack.matrix_shortcut.core.data.Gesture
 import dev.vizualjack.matrix_shortcut.core.data.GestureEntry
 import dev.vizualjack.matrix_shortcut.ui.KeyCode
+import dev.vizualjack.matrix_shortcut.ui.components.Button
+import dev.vizualjack.matrix_shortcut.ui.components.Dropdown
 import dev.vizualjack.matrix_shortcut.ui.components.EditNumberField
 import dev.vizualjack.matrix_shortcut.ui.components.EditStringField
 import dev.vizualjack.matrix_shortcut.ui.theme.AppTheme
@@ -60,11 +63,9 @@ fun GestureEdit(editGesture: Gesture?, onSave: (gesture: Gesture) -> Unit, onBac
             .padding(16.dp),
         contentAlignment = Alignment.TopStart
     ) {
-        Button(onClick = {
+        Button("Back", {
             onBack()
-        }) {
-            Text(text = "Back")
-        }
+        })
     }
 
     Box(
@@ -74,19 +75,16 @@ fun GestureEdit(editGesture: Gesture?, onSave: (gesture: Gesture) -> Unit, onBac
         contentAlignment = Alignment.TopEnd
     ) {
         Row {
-            Button(
+            Button("Delete",
                 enabled = editGesture != null,
                 onClick = {
                     onDelete()
                     onBack()
-              },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFBF0000))
-            ) {
-                Text(text = "Delete")
-            }
+                },
+                color = colorResource(R.color.error_container)
+            )
             Spacer(modifier = Modifier.width(5.dp))
-            Button(
-                onClick = {
+            Button("Save", {
                     var gesture = Gesture("","", arrayListOf())
                     if (editGesture != null) gesture = editGesture
                     gesture.name = name
@@ -95,9 +93,7 @@ fun GestureEdit(editGesture: Gesture?, onSave: (gesture: Gesture) -> Unit, onBac
                     onSave(gesture)
                     onBack()
                 },
-            ) {
-                Text(text = "Save")
-            }
+            )
         }
     }
 
@@ -143,28 +139,10 @@ fun GestureEdit(editGesture: Gesture?, onSave: (gesture: Gesture) -> Unit, onBac
             onClick = {
                 gestureEntries = (gestureEntries + GestureEntry(KeyCode.VOLUME_UP.value, 0)) as ArrayList<GestureEntry>
             },
+            containerColor = colorResource(R.color.buttons),
+            contentColor = colorResource(R.color.text)
         ) {
             Icon(Icons.Filled.Add, "Add gesture element")
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GestureEditPreview() {
-    AppTheme {
-        Surface(
-            color = MaterialTheme.colorScheme.background
-        ) {
-            GestureEdit(
-                editGesture = Gesture("Name goes here", "may day",arrayListOf(
-                    GestureEntry(KeyEvent.KEYCODE_VOLUME_DOWN,100),
-                    GestureEntry(KeyEvent.KEYCODE_VOLUME_UP,0)
-                )),
-                onBack = {},
-                onSave = {},
-                onDelete = {}
-            )
         }
     }
 }
@@ -179,13 +157,11 @@ fun GestureEditEntry(gestureElement: GestureEntry, deleteGestureElement:() -> Un
     var minDuration by remember { mutableStateOf(gestureElement.minDuration) }
 
     Row(modifier = Modifier.padding(3.dp)) {
-        KeyCodeDropdown(keyCode = keyCode,
-            onKeyCodeChanged = {
+        Dropdown(keyCode, KeyCode.values().filter { it != KeyCode.UNKNOWN }.toTypedArray(), {
                 keyCode = it
                 gestureElement.keyCode = keyCode.value
             },
-            modifier = Modifier.width(161.dp)
-        )
+            modifier = Modifier.width(161.dp))
         Spacer(modifier = Modifier.width(3.dp))
         EditNumberField(
             text = "min. dur (ms)",
@@ -206,46 +182,22 @@ fun GestureEditEntry(gestureElement: GestureEntry, deleteGestureElement:() -> Un
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true)
 @Composable
-fun KeyCodeDropdown(
-    keyCode: KeyCode,
-    onKeyCodeChanged: (KeyCode) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    Box(
-        modifier = modifier
-    ) {
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = {
-                expanded = !expanded
-            }
+fun GestureEditPreview() {
+    AppTheme {
+        Surface(
+            color = MaterialTheme.colorScheme.background
         ) {
-            TextField(
-                value = keyCode.text,
-                onValueChange = {},
-                readOnly = true,
-                textStyle = MaterialTheme.typography.bodySmall,
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                modifier = Modifier.menuAnchor()
+            GestureEdit(
+                editGesture = Gesture("Name goes here", "may day",arrayListOf(
+                    GestureEntry(KeyEvent.KEYCODE_VOLUME_DOWN,100),
+                    GestureEntry(KeyEvent.KEYCODE_VOLUME_UP,0)
+                )),
+                onBack = {},
+                onSave = {},
+                onDelete = {}
             )
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
-            ) {
-                KeyCode.values().forEach {
-                    if(it == KeyCode.UNKNOWN) return@forEach
-                    DropdownMenuItem(
-                        text = { Text(text = it.text) },
-                        onClick = {
-                            onKeyCodeChanged(it)
-                            expanded = false
-                        }
-                    )
-                }
-            }
         }
     }
 }

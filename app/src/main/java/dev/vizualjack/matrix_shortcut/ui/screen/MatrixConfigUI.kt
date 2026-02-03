@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.absolutePadding
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -40,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.AutofillType
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Matrix
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
@@ -47,11 +49,15 @@ import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import dev.vizualjack.matrix_shortcut.AppActivity
+import dev.vizualjack.matrix_shortcut.R
 import dev.vizualjack.matrix_shortcut.core.data.MatrixConfig
 import dev.vizualjack.matrix_shortcut.core.matrix.MatrixClient
 import dev.vizualjack.matrix_shortcut.core.matrix.Room
 import dev.vizualjack.matrix_shortcut.core.matrix.RoomVisibility
+import dev.vizualjack.matrix_shortcut.ui.components.Button
+import dev.vizualjack.matrix_shortcut.ui.components.Dropdown
 import dev.vizualjack.matrix_shortcut.ui.components.EditStringField
+import dev.vizualjack.matrix_shortcut.ui.components.Popup
 import dev.vizualjack.matrix_shortcut.ui.theme.AppTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -138,9 +144,7 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
             .padding(16.dp),
         contentAlignment = Alignment.TopStart
     ) {
-        Button(onClick = { onBack() }) {
-            Text(text = "Back")
-        }
+        Button("Back", { onBack() })
     }
 
     Box(
@@ -149,9 +153,7 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
             .padding(16.dp),
         contentAlignment = Alignment.TopEnd
     ) {
-        Button(onClick = { save() }) {
-            Text(text = "Save")
-        }
+        Button("Save", { save() })
     }
 
 
@@ -166,11 +168,9 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
         Spacer(modifier = Modifier.height(5.dp))
 
         Text(if (userName != null) "Logged in as " + userName else "Please login")
-        Button(onClick = {
+        Button(if (userName != null) "Change" else "Login", {
             shownPopup = ShownPopup.LOGIN
-        }) {
-            Text(if (userName != null) "Change" else "Login")
-        }
+        })
         Spacer(modifier = Modifier.height(5.dp))
 
 
@@ -180,22 +180,17 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
             modifier = Modifier.fillMaxWidth()
         )
         Row {
-            Button(onClick = {
+            Button("Create room",{
                 shownPopup = ShownPopup.ROOM_CREATOR
-            }) {
-                Text("Create room")
-            }
+            })
             Spacer(Modifier.width(15.dp))
-            Button(onClick = {
+            Button("Select room", {
                 shownPopup = ShownPopup.ROOM_SELECTOR
-            }) {
-                Text("Select room")
-            }
+            })
         }
 
         Spacer(Modifier.height(10.dp))
-        Button(modifier = Modifier.fillMaxWidth(),
-            onClick = {
+        Button("Send test message", {
                 if(activity == null) return@Button
                 if(serverDomain == null || serverDomain == "" || accessToken == null || accessToken == "") {
                     activity.sendToastText("Please login first")
@@ -211,9 +206,7 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
                         activity.sendToastText(if (result.success) "Successfully sent test message!" else "Error while sending a test message: " + result.error)
                     }
                 }
-        }) {
-            Text(text = "Send test message")
-        }
+        }, Modifier.fillMaxWidth())
     }
 }
 
@@ -270,74 +263,63 @@ fun LoginPopup(context: Context?, serverDomain: String, onClose: () -> Unit, onS
         }
     }
 
-    Dialog (
-        onDismissRequest = { onClose() }
-    ) {
-        Surface(
-            shape = MaterialTheme.shapes.medium,
-            tonalElevation = 20.dp,
+    Popup ({ onClose() }) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Spacer(Modifier.height(2.dp))
-                Text (
-                    text = "Login to " + serverDomain,
-                    fontSize = TextUnit(15f, TextUnitType.Sp)
-                )
-                Spacer(Modifier.height(10.dp))
-                var statusColor = Color.White
-                if(loginStatus != null) {
-                    if (loginStatus!! == LoginStatus.FAILED) statusColor = Color.Red
-                    else if (loginStatus!! == LoginStatus.SUCCESS) statusColor = Color.Green
-                }
-                Text (
-                    text = if(loginStatus != null) loginStatus!!.text else "",
-                    color = statusColor
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                EditStringField(text = "username",
-                    value = userName,
-                    onValueChanged = {userName = it.trim()},
-                    modifier = Modifier.fillMaxWidth(),
-                    hidden = false,
-                    autofillType = AutofillType.Username
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                EditStringField(text = "password",
-                    value = password,
-                    onValueChanged = {password = it.trim()},
-                    modifier = Modifier.fillMaxWidth(),
-                    hidden = true,
-                    autofillType = AutofillType.Password
-                )
-                Spacer(modifier = Modifier.height(5.dp))
-                Text(
-                    text = "Password will be never saved!",
-                    color = Color.Gray
-                )
-                Spacer(modifier = Modifier.height(15.dp))
-                Row {
-                    Button(
-                        enabled = loginStatus != LoginStatus.LOGGING_IN,
-                        onClick = {
-                            onClose()
-                        }
-                    ) {
-                        Text("Cancel")
+            Spacer(Modifier.height(2.dp))
+            Text (
+                text = "Login to " + serverDomain,
+                fontSize = TextUnit(15f, TextUnitType.Sp)
+            )
+            Spacer(Modifier.height(10.dp))
+            var statusColor = Color.White
+            if(loginStatus != null) {
+                if (loginStatus!! == LoginStatus.FAILED) statusColor = colorResource(R.color.error)
+                else if (loginStatus!! == LoginStatus.SUCCESS) statusColor = colorResource(R.color.success)
+            }
+            Text (
+                text = if(loginStatus != null) loginStatus!!.text else "",
+                color = statusColor
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            EditStringField(text = "username",
+                value = userName,
+                onValueChanged = {userName = it.trim()},
+                modifier = Modifier.fillMaxWidth(),
+                hidden = false,
+                autofillType = AutofillType.Username
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            EditStringField(text = "password",
+                value = password,
+                onValueChanged = {password = it.trim()},
+                modifier = Modifier.fillMaxWidth(),
+                hidden = true,
+                autofillType = AutofillType.Password
+            )
+            Spacer(modifier = Modifier.height(5.dp))
+            Text(
+                text = "Password will be never saved!",
+                color = Color.Gray
+            )
+            Spacer(modifier = Modifier.height(15.dp))
+            Row {
+                Button("Cancel",
+                    enabled = loginStatus != LoginStatus.LOGGING_IN,
+                    onClick =  {
+                        onClose()
                     }
-                    Spacer(modifier = Modifier.fillMaxWidth(0.1f))
-                    Button(
-                        enabled = loginStatus != LoginStatus.LOGGING_IN,
-                        onClick = {
-                            login()
-                        }
-                    ) {
-                        Text("Login")
+                )
+                Spacer(modifier = Modifier.fillMaxWidth(0.1f))
+                Button("Login",
+                    enabled = loginStatus != LoginStatus.LOGGING_IN,
+                    onClick = {
+                        login()
                     }
-                }
+                )
             }
         }
     }
@@ -393,59 +375,48 @@ fun RoomCreatorPopup(context: Context?, serverDomain: String, userName: String, 
         }
     }
 
-    Dialog (
-        onDismissRequest = { onClose() }
-    ) {
-        Surface(
-            shape = MaterialTheme.shapes.medium,
-            tonalElevation = 20.dp,
+    Popup({ onClose() }) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text (
-                    text = "Create private room / direct message", // + serverDomain,
-                    fontSize = TextUnit(15f, TextUnitType.Sp)
-                )
-                var statusColor = Color.White
-                if(createStatus != null && createStatus != CreateStatus.CREATING) {
-                    if (createStatus!! != CreateStatus.SUCCESS) statusColor = Color.Red
-                    else statusColor = Color.Green
-                }
-                Text (
-                    text = if(createStatus != null) createStatus!!.text else "",
-                    color = statusColor
-                )
-                Row {
-                    Text("Private chat", Modifier.align(Alignment.CenterVertically).clickable { directMessageRoom = !directMessageRoom })
-                    Checkbox(directMessageRoom, {directMessageRoom = it})
-                }
-                if(!directMessageRoom) {
-                    EditStringField(text = "room name",
-                        value = roomName,
-                        onValueChanged = {roomName = it},
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-                Spacer(Modifier.height(5.dp))
-                EditStringField(text = "user to invite",
-                    value = inviteUserName,
-                    onValueChanged = {inviteUserName = it.trim()},
+            Text (
+                text = "Create private room / direct message", // + serverDomain,
+                fontSize = TextUnit(15f, TextUnitType.Sp)
+            )
+            var statusColor = Color.White
+            if(createStatus != null && createStatus != CreateStatus.CREATING) {
+                if (createStatus!! != CreateStatus.SUCCESS) statusColor = Color.Red
+                else statusColor = Color.Green
+            }
+            Text (
+                text = if(createStatus != null) createStatus!!.text else "",
+                color = statusColor
+            )
+            Row {
+                Text("Private chat", Modifier.align(Alignment.CenterVertically).clickable { directMessageRoom = !directMessageRoom })
+                Checkbox(directMessageRoom, {directMessageRoom = it})
+            }
+            if(!directMessageRoom) {
+                EditStringField(text = "room name",
+                    value = roomName,
+                    onValueChanged = {roomName = it},
                     modifier = Modifier.fillMaxWidth()
                 )
-                Text("Only username is enough,\nif the user is on the same server", textAlign = TextAlign.Center, fontSize = MaterialTheme.typography.bodySmall.fontSize)
-                Spacer(Modifier.height(20.dp))
-                Row {
-                    Button({onClose()}) {
-                        Text("Cancel")
-                    }
-                    Spacer(modifier = Modifier.width(20.dp))
-                    Button({create()}) {
-                        Text("Create")
-                    }
-                }
+            }
+            Spacer(Modifier.height(5.dp))
+            EditStringField(text = "user to invite",
+                value = inviteUserName,
+                onValueChanged = {inviteUserName = it.trim()},
+                modifier = Modifier.fillMaxWidth()
+            )
+            Text("Only username is enough,\nif the user is on the same server", textAlign = TextAlign.Center, fontSize = MaterialTheme.typography.bodySmall.fontSize)
+            Spacer(Modifier.height(20.dp))
+            Row {
+                Button("Cancel",{onClose()})
+                Spacer(modifier = Modifier.width(20.dp))
+                Button("Create", {create()})
             }
         }
     }
@@ -520,93 +491,36 @@ fun RoomSelectorPopup(context: Context?, serverDomain: String, userName: String,
         loadRooms()
     }
 
-    Dialog (
-        onDismissRequest = { onClose() }
-    ) {
-        Surface(
-            shape = MaterialTheme.shapes.medium,
-            tonalElevation = 20.dp,
+    Popup ({ onClose() }) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text (
-                    text = "Room selector",
-                    fontSize = TextUnit(15f, TextUnitType.Sp)
-                )
-//                Spacer(Modifier.height(5.dp))
-
-                var statusColor = Color.White
-                if(selectStatus != null && selectStatus != SelectStatus.GETTING_DATA) statusColor = Color.Red
-                Text (
-                    text = if(selectStatus != null) selectStatus!!.text else "",
-                    color = statusColor
-                )
-
-                Row {
-                    RoomDropDown(selectedRoom, rooms, {room: Room -> selectedRoom = room }, Modifier.fillMaxWidth(0.85f))
-                    Spacer(Modifier.width(10.dp))
-                    IconButton({refresh()}, Modifier.align(Alignment.CenterVertically)) { Icon(Icons.Filled.Refresh, "Refresh") }
-                }
-                Spacer(Modifier.height(5.dp))
-                Text (text = "Refreshing also accepts invites", color = Color.Gray)
-                Spacer(Modifier.height(10.dp))
-                Row {
-                    Button({onClose()}) {
-                        Text("Cancel")
-                    }
-                    Spacer(modifier = Modifier.width(20.dp))
-                    Button({select()}) {
-                        Text("Select")
-                    }
-                }
-
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun RoomDropDown(
-    selectedRoom: Room?,
-    rooms: List<Room>,
-    onRoomChanged: (Room) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    Box(
-        modifier = modifier
-    ) {
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = {
-                expanded = !expanded
-            }
-        ) {
-            TextField(
-                value = if(selectedRoom == null) "Select a room" else selectedRoom.displayName,
-                onValueChange = {},
-                readOnly = true,
-                textStyle = MaterialTheme.typography.bodyMedium,
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                modifier = Modifier.menuAnchor()
+            Text (
+                text = "Room selector",
+                fontSize = TextUnit(15f, TextUnitType.Sp)
             )
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
-            ) {
-                for (room in rooms) {
-                    DropdownMenuItem(
-                        text = { Text(text = room.displayName) },
-                        onClick = {
-                            onRoomChanged(room)
-                            expanded = false
-                        }
-                    )
-                }
+
+            var statusColor = Color.White
+            if(selectStatus != null && selectStatus != SelectStatus.GETTING_DATA) statusColor = Color.Red
+            Text (
+                text = if(selectStatus != null) selectStatus!!.text else "",
+                color = statusColor
+            )
+
+            Row {
+                Dropdown(selectedRoom, rooms.toTypedArray(), {selectedRoom = it }, Modifier.fillMaxWidth(0.85f))
+                Spacer(Modifier.width(10.dp))
+                IconButton({refresh()}, Modifier.align(Alignment.CenterVertically)) { Icon(Icons.Filled.Refresh, "Refresh") }
+            }
+            Spacer(Modifier.height(5.dp))
+            Text (text = "Refreshing also accepts invites", color = colorResource(R.color.text_info))
+            Spacer(Modifier.height(10.dp))
+            Row {
+                Button("Cancel", {onClose()})
+                Spacer(modifier = Modifier.width(20.dp))
+                Button("Select", {select()})
             }
         }
     }
