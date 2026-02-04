@@ -10,9 +10,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.WindowCompat
+import dev.vizualjack.matrix_shortcut.core.GestureDetectorService
 import dev.vizualjack.matrix_shortcut.core.data.Storage
 import dev.vizualjack.matrix_shortcut.core.data.StorageData
 import dev.vizualjack.matrix_shortcut.core.LogSaver
+import dev.vizualjack.matrix_shortcut.core.isAccessibilityServiceEnabled
 import dev.vizualjack.matrix_shortcut.ui.AppUI
 import dev.vizualjack.matrix_shortcut.ui.theme.AppTheme
 import kotlinx.coroutines.CoroutineScope
@@ -32,6 +34,7 @@ class AppActivity : ComponentActivity() {
     }
 
     var loadingStatus: LoadingStatus = LoadingStatus.LOADING
+    var serviceEnabledCurrentStatus = false
 
     var storageData: StorageData? = null
     private val exportActivity =
@@ -102,6 +105,7 @@ class AppActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        serviceEnabledCurrentStatus = isAccessibilityServiceEnabled(applicationContext, GestureDetectorService::class.java)
         window.statusBarColor = Color.TRANSPARENT
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContentToAppUI()
@@ -111,6 +115,15 @@ class AppActivity : ComponentActivity() {
                 refreshContent()
             }
         }
+    }
+
+    override fun onResume() {
+        var serviceEnabledNewStatus = isAccessibilityServiceEnabled(applicationContext, GestureDetectorService::class.java)
+        if(serviceEnabledNewStatus != serviceEnabledCurrentStatus) {
+            refreshContent()
+            serviceEnabledCurrentStatus = serviceEnabledNewStatus
+        }
+        super.onResume()
     }
 
     private fun refreshContent() { setContentToAppUI() }

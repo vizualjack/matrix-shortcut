@@ -1,5 +1,10 @@
 package dev.vizualjack.matrix_shortcut.ui.screen
 
+import android.accessibilityservice.AccessibilityService
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -40,9 +45,13 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat.startActivity
 import dev.vizualjack.matrix_shortcut.core.data.Gesture
 import dev.vizualjack.matrix_shortcut.AppActivity
 import dev.vizualjack.matrix_shortcut.R
+import dev.vizualjack.matrix_shortcut.core.GestureDetectorService
+import dev.vizualjack.matrix_shortcut.core.isAccessibilityServiceEnabled
+import dev.vizualjack.matrix_shortcut.ui.components.Button
 import dev.vizualjack.matrix_shortcut.ui.theme.AppTheme
 
 
@@ -121,6 +130,21 @@ fun GestureList(activity:AppActivity, gestures: List<Gesture>, newGesture:() -> 
         ) {
             Icon(Icons.Filled.Add, "Add gesture element")
         }
+    }
+
+    val serviceEnabled = isAccessibilityServiceEnabled(activity.applicationContext, GestureDetectorService::class.java)
+    Box(modifier = Modifier.fillMaxSize().padding(16.dp),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        Button(if(serviceEnabled) "Service is active" else "Please activate the service",
+            enabled = !serviceEnabled,
+            onClick = {
+                if(serviceEnabled) return@Button
+                val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                startActivity(activity.applicationContext, intent, null)
+            })
     }
 }
 
