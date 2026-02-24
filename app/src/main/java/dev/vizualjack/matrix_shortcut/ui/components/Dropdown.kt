@@ -20,7 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import dev.vizualjack.matrix_shortcut.R
-import dev.vizualjack.matrix_shortcut.ui.KeyCode
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,7 +52,7 @@ fun <T> Dropdown(
                     unfocusedLabelColor = colorResource(R.color.text),
                     disabledLabelColor = colorResource(R.color.text),
                     errorLabelColor = colorResource(R.color.text),
-                    containerColor = colorResource(R.color.text_inputs),
+                    containerColor = colorResource(R.color.text_input),
                     disabledIndicatorColor = Color.Transparent,
                     focusedIndicatorColor = Color.Transparent,
                     errorIndicatorColor = Color.Transparent,

@@ -86,8 +86,8 @@ fun AppUI(
                 GestureList(
                     activity = activity,
                     gestures = gestures,
-                    openGesture = { index ->
-                        selectedGesture = gestures[index]
+                    openGesture = { gesture ->
+                        selectedGesture = gesture
                         navController.backQueue.clear()
                         navController.navigate(Location.Gesture.name)
                     },

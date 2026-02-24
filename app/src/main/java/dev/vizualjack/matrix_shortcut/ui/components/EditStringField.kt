@@ -68,7 +68,7 @@ fun EditStringField(
             unfocusedLabelColor = colorResource(R.color.text),
             disabledLabelColor = colorResource(R.color.text),
             errorLabelColor = colorResource(R.color.text),
-            containerColor = colorResource(R.color.text_inputs),
+            containerColor = colorResource(R.color.text_input),
             disabledIndicatorColor = Color.Transparent,
             focusedIndicatorColor = Color.Transparent,
             errorIndicatorColor = Color.Transparent,

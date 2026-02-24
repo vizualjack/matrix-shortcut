@@ -1,14 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="background">#001828</color>
+    <color name="background">#0A0F1E</color>
     <color name="text">#FFFFFF</color>
+    <color name="placeholder">#30FFFFFF</color>
     <color name="text_accent">#8ECCFF</color>
     <color name="text_info">#ABABAB</color>
-    <color name="buttons">#4B0D43</color>
-    <color name="text_inputs">#6F000000</color>
+    <color name="button">#4B0D43</color>
+    <color name="accent_button">#333B82F6</color>
+    <color name="icon_button">#7F1E293B</color>
+    <color name="floating_link">#660F172A</color>
+    <color name="text_input">#6F000000</color>
     <color name="error">#DC4545</color>
     <color name="error_container">#7C2626</color>
     <color name="success">#0A7A26</color>
-    <color name="popups">#042033</color>
+    <color name="popup">#042033</color>
     <color name="dropdown">#0C2D4B</color>
 </resources>

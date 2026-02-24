@@ -1,15 +1,12 @@
 package dev.vizualjack.matrix_shortcut.ui.screen
 
 import android.content.Context
-import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.absolutePadding
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -18,16 +15,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -40,21 +32,18 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.AutofillType
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Matrix
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import dev.vizualjack.matrix_shortcut.AppActivity
 import dev.vizualjack.matrix_shortcut.R
 import dev.vizualjack.matrix_shortcut.core.data.MatrixConfig
 import dev.vizualjack.matrix_shortcut.core.matrix.MatrixClient
 import dev.vizualjack.matrix_shortcut.core.matrix.Room
-import dev.vizualjack.matrix_shortcut.core.matrix.RoomVisibility
-import dev.vizualjack.matrix_shortcut.ui.components.Button
+import dev.vizualjack.matrix_shortcut.ui.components.TextButton
 import dev.vizualjack.matrix_shortcut.ui.components.Dropdown
 import dev.vizualjack.matrix_shortcut.ui.components.EditStringField
 import dev.vizualjack.matrix_shortcut.ui.components.Popup
@@ -144,7 +133,7 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
             .padding(16.dp),
         contentAlignment = Alignment.TopStart
     ) {
-        Button("Back", { onBack() })
+        TextButton("Back", { onBack() })
     }
 
     Box(
@@ -153,7 +142,7 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
             .padding(16.dp),
         contentAlignment = Alignment.TopEnd
     ) {
-        Button("Save", { save() })
+        TextButton("Save", { save() })
     }
 
 
@@ -168,7 +157,7 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
         Spacer(modifier = Modifier.height(5.dp))
 
         Text(if (userName != null) "Logged in as " + userName else "Please login")
-        Button(if (userName != null) "Change" else "Login", {
+        TextButton(if (userName != null) "Change" else "Login", {
             shownPopup = ShownPopup.LOGIN
         })
         Spacer(modifier = Modifier.height(5.dp))
@@ -180,25 +169,25 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
             modifier = Modifier.fillMaxWidth()
         )
         Row {
-            Button("Create room",{
+            TextButton("Create room",{
                 shownPopup = ShownPopup.ROOM_CREATOR
             })
             Spacer(Modifier.width(15.dp))
-            Button("Select room", {
+            TextButton("Select room", {
                 shownPopup = ShownPopup.ROOM_SELECTOR
             })
         }
 
         Spacer(Modifier.height(10.dp))
-        Button("Send test message", {
-                if(activity == null) return@Button
+        TextButton("Send test message", {
+                if(activity == null) return@TextButton
                 if(serverDomain == null || serverDomain == "" || accessToken == null || accessToken == "") {
                     activity.sendToastText("Please login first")
-                    return@Button
+                    return@TextButton
                 }
                 if(targetRoom == null || targetRoom == "") {
                     activity.sendToastText("Please select a room")
-                    return@Button
+                    return@TextButton
                 }
                 CoroutineScope(Dispatchers.Default).launch {
                     val result = MatrixClient(activity.applicationContext, serverDomain!!, userName!!, accessToken!!, refreshToken).sendMessage(targetRoom!!, "That worked well!")
@@ -307,14 +296,14 @@ fun LoginPopup(context: Context?, serverDomain: String, onClose: () -> Unit, onS
             )
             Spacer(modifier = Modifier.height(15.dp))
             Row {
-                Button("Cancel",
+                TextButton("Cancel",
                     enabled = loginStatus != LoginStatus.LOGGING_IN,
                     onClick =  {
                         onClose()
                     }
                 )
                 Spacer(modifier = Modifier.fillMaxWidth(0.1f))
-                Button("Login",
+                TextButton("Login",
                     enabled = loginStatus != LoginStatus.LOGGING_IN,
                     onClick = {
                         login()
@@ -414,9 +403,9 @@ fun RoomCreatorPopup(context: Context?, serverDomain: String, userName: String, 
             Text("Only username is enough,\nif the user is on the same server", textAlign = TextAlign.Center, fontSize = MaterialTheme.typography.bodySmall.fontSize)
             Spacer(Modifier.height(20.dp))
             Row {
-                Button("Cancel",{onClose()})
+                TextButton("Cancel",{onClose()})
                 Spacer(modifier = Modifier.width(20.dp))
-                Button("Create", {create()})
+                TextButton("Create", {create()})
             }
         }
     }
@@ -518,9 +507,9 @@ fun RoomSelectorPopup(context: Context?, serverDomain: String, userName: String,
             Text (text = "Refreshing also accepts invites", color = colorResource(R.color.text_info))
             Spacer(Modifier.height(10.dp))
             Row {
-                Button("Cancel", {onClose()})
+                TextButton("Cancel", {onClose()})
                 Spacer(modifier = Modifier.width(20.dp))
-                Button("Select", {select()})
+                TextButton("Select", {select()})
             }
         }
     }
