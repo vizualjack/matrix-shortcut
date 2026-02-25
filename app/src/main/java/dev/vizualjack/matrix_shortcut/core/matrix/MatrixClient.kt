@@ -265,6 +265,10 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
         return SimpleResult(true)
     }
 
+    fun logout(): SimpleResult {
+        return checkResponse(logoutRequest())
+    }
+
     private fun refreshAccessToken(): SimpleResult {
         if(refreshToken == null) return SimpleResult(false, Error.UNAUTHORIZED)
         val response = refreshAccessTokenRequest(refreshToken!!)
@@ -301,6 +305,11 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
             password = password,
         )
         return createUnauthorizedRESTClient().post(url, request, LoginRequest.serializer())
+    }
+
+    private fun logoutRequest(): RESTClient.Response? {
+        val url = "$baseUrl/logout"
+        return createAuthorizedRESTClient().post(url)
     }
 
     private fun refreshAccessTokenRequest(refreshToken: String): RESTClient.Response? {

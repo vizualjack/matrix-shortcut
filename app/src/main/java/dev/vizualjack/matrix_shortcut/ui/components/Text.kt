@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
@@ -43,8 +44,9 @@ fun Text(
     size: Float = 3f,
     fontWeight: FontWeight = FontWeight.Normal,
     color: Color = colorResource(R.color.text),
+    align: TextAlign = TextAlign.Left,
     modifier: Modifier = Modifier,
 ) {
-    Text(content, modifier, color, TextUnit(size, TextUnitType.Em), fontWeight = fontWeight)
+    Text(content, modifier, color, TextUnit(size, TextUnitType.Em), fontWeight = fontWeight, textAlign = align)
 }
 

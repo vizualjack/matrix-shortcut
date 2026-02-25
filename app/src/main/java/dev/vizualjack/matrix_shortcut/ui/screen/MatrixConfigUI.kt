@@ -1,25 +1,32 @@
 package dev.vizualjack.matrix_shortcut.ui.screen
 
 import android.content.Context
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -33,10 +40,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.AutofillType
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import dev.vizualjack.matrix_shortcut.AppActivity
 import dev.vizualjack.matrix_shortcut.R
@@ -47,6 +53,8 @@ import dev.vizualjack.matrix_shortcut.ui.components.TextButton
 import dev.vizualjack.matrix_shortcut.ui.components.Dropdown
 import dev.vizualjack.matrix_shortcut.ui.components.EditStringField
 import dev.vizualjack.matrix_shortcut.ui.components.Popup
+import dev.vizualjack.matrix_shortcut.ui.components.Section
+import dev.vizualjack.matrix_shortcut.ui.components.Text
 import dev.vizualjack.matrix_shortcut.ui.theme.AppTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -127,75 +135,109 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
         onBack()
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        contentAlignment = Alignment.TopStart
-    ) {
-        TextButton("Back", { onBack() })
+    fun logout() {
+        CoroutineScope(Dispatchers.Default).launch {
+            if(activity == null) return@launch
+            val matrixClient = MatrixClient(activity.applicationContext, serverDomain!!, userName!!, accessToken!!, refreshToken!!)
+            val result = matrixClient.logout()
+            if(!result.success) return@launch
+            CoroutineScope(Dispatchers.Main).launch {
+                userName = null
+                accessToken = null
+                refreshToken = null
+            }
+        }
     }
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        contentAlignment = Alignment.TopEnd
-    ) {
-        TextButton("Save", { save() })
-    }
-
 
     Column(
         modifier = Modifier
-            .padding(10.dp)
+            .padding(16.dp)
             .fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        EditStringField(text = "server domain", value = serverDomain ?: "", onValueChanged = {serverDomain = it.trim()}, modifier = Modifier.fillMaxWidth())
-        Spacer(modifier = Modifier.height(5.dp))
+        Box {
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.TopStart
+            ) {
+                IconButton(onClick = {onBack()}) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        Modifier.size(30.dp)
+                    )
+                }
+            }
 
-        Text(if (userName != null) "Logged in as " + userName else "Please login")
-        TextButton(if (userName != null) "Change" else "Login", {
-            shownPopup = ShownPopup.LOGIN
-        })
-        Spacer(modifier = Modifier.height(5.dp))
-
-
-        EditStringField(text = "room id",
-            value = targetRoom ?: "",
-            onValueChanged = {targetRoom = it.trim()},
-            modifier = Modifier.fillMaxWidth()
-        )
-        Row {
-            TextButton("Create room",{
-                shownPopup = ShownPopup.ROOM_CREATOR
-            })
-            Spacer(Modifier.width(15.dp))
-            TextButton("Select room", {
-                shownPopup = ShownPopup.ROOM_SELECTOR
-            })
+            Text("Matrix server", color = colorResource(R.color.text), size = 4f, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.Center))
         }
 
-        Spacer(Modifier.height(10.dp))
-        TextButton("Send test message", {
-                if(activity == null) return@TextButton
-                if(serverDomain == null || serverDomain == "" || accessToken == null || accessToken == "") {
-                    activity.sendToastText("Please login first")
-                    return@TextButton
+
+        Section("Server settings") {
+            EditStringField(labelText = "Server domain", placeholderText = "server.domain", value = serverDomain ?: "", onValueChanged = {serverDomain = it.trim()}, modifier = Modifier.fillMaxWidth())
+        }
+
+        Section("User account") {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Box(modifier = Modifier.background(colorResource(R.color.accent_button), CircleShape).padding(8.dp)) {
+                    Icon(Icons.Default.Person, "Account icon")
                 }
-                if(targetRoom == null || targetRoom == "") {
-                    activity.sendToastText("Please select a room")
-                    return@TextButton
+                Text(if (userName != null) "Logged in as " + userName else "Please login", modifier = Modifier.weight(1f))
+                TextButton(if (userName != null) "Logout" else "Login", {
+                    if(userName != null) logout()
+                    else shownPopup = ShownPopup.LOGIN
+                })
+            }
+        }
+
+        Section("Room configuration") {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                EditStringField(
+                    labelText = "Room id",
+                    placeholderText = "abcdefgh:server.domain",
+                    value = targetRoom ?: "",
+                    onValueChanged = { targetRoom = it.trim() },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(15.dp)){
+                    TextButton("Create room", {
+                        shownPopup = ShownPopup.ROOM_CREATOR
+                    }, modifier = Modifier.weight(1f))
+
+                    TextButton("Select room", {
+                        shownPopup = ShownPopup.ROOM_SELECTOR
+                    }, modifier = Modifier.weight(1f))
                 }
-                CoroutineScope(Dispatchers.Default).launch {
-                    val result = MatrixClient(activity.applicationContext, serverDomain!!, userName!!, accessToken!!, refreshToken).sendMessage(targetRoom!!, "That worked well!")
-                    CoroutineScope(Dispatchers.Main).launch {
-                        activity.sendToastText(if (result.success) "Successfully sent test message!" else "Error while sending a test message: " + result.error)
+            }
+        }
+
+        Section("Diagnostics") {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton("Send test message", {
+                    if(activity == null) return@TextButton
+                    if(serverDomain == null || serverDomain == "" || accessToken == null || accessToken == "") {
+                        activity.sendToastText("Please login first")
+                        return@TextButton
                     }
-                }
-        }, Modifier.fillMaxWidth())
+                    if(targetRoom == null || targetRoom == "") {
+                        activity.sendToastText("Please select a room")
+                        return@TextButton
+                    }
+                    CoroutineScope(Dispatchers.Default).launch {
+                        val result = MatrixClient(activity.applicationContext, serverDomain!!, userName!!, accessToken!!, refreshToken).sendMessage(targetRoom!!, "That worked well!")
+                        CoroutineScope(Dispatchers.Main).launch {
+                            activity.sendToastText(if (result.success) "Successfully sent test message!" else "Error while sending a test message: " + result.error)
+                        }
+                    }
+                }, Modifier.fillMaxWidth())
+                Text("This will send a test message to the specified room.", 2.5f, align = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(15.dp), verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxHeight(1f)) {
+            TextButton("Cancel", {onBack()}, modifier = Modifier.weight(1f))
+            TextButton("Save", {save()}, modifier = Modifier.weight(1f))
+        }
     }
 }
 
@@ -254,27 +296,25 @@ fun LoginPopup(context: Context?, serverDomain: String, onClose: () -> Unit, onS
 
     Popup ({ onClose() }) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(30.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Spacer(Modifier.height(2.dp))
-            Text (
-                text = "Login to " + serverDomain,
-                fontSize = TextUnit(15f, TextUnitType.Sp)
+            Text ("Login to " + serverDomain,
+                4f
             )
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(5.dp))
             var statusColor = Color.White
             if(loginStatus != null) {
-                if (loginStatus!! == LoginStatus.FAILED) statusColor = colorResource(R.color.error)
-                else if (loginStatus!! == LoginStatus.SUCCESS) statusColor = colorResource(R.color.success)
+                if (loginStatus!! == LoginStatus.SUCCESS) statusColor = colorResource(R.color.success)
+                else if (loginStatus!! != LoginStatus.LOGGING_IN) statusColor = colorResource(R.color.error)
             }
             Text (
-                text = if(loginStatus != null) loginStatus!!.text else "",
+                if(loginStatus != null) loginStatus!!.text else "",
                 color = statusColor
             )
-            Spacer(modifier = Modifier.height(10.dp))
-            EditStringField(text = "username",
+            Spacer(modifier = Modifier.height(5.dp))
+            EditStringField(labelText = "username",
                 value = userName,
                 onValueChanged = {userName = it.trim()},
                 modifier = Modifier.fillMaxWidth(),
@@ -282,32 +322,33 @@ fun LoginPopup(context: Context?, serverDomain: String, onClose: () -> Unit, onS
                 autofillType = AutofillType.Username
             )
             Spacer(modifier = Modifier.height(10.dp))
-            EditStringField(text = "password",
+            EditStringField(labelText = "password",
                 value = password,
                 onValueChanged = {password = it.trim()},
                 modifier = Modifier.fillMaxWidth(),
                 hidden = true,
                 autofillType = AutofillType.Password
             )
-            Spacer(modifier = Modifier.height(5.dp))
-            Text(
-                text = "Password will be never saved!",
+            Spacer(modifier = Modifier.height(15.dp))
+            Text("Password will be never saved!",
                 color = Color.Gray
             )
             Spacer(modifier = Modifier.height(15.dp))
-            Row {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 TextButton("Cancel",
+                    modifier = Modifier.weight(1f),
                     enabled = loginStatus != LoginStatus.LOGGING_IN,
                     onClick =  {
                         onClose()
                     }
                 )
-                Spacer(modifier = Modifier.fillMaxWidth(0.1f))
                 TextButton("Login",
                     enabled = loginStatus != LoginStatus.LOGGING_IN,
                     onClick = {
                         login()
-                    }
+                    },
+                    modifier = Modifier.weight(1f),
+                    color = colorResource(R.color.accent_button),
                 )
             }
         }
@@ -371,41 +412,60 @@ fun RoomCreatorPopup(context: Context?, serverDomain: String, userName: String, 
             verticalArrangement = Arrangement.Center
         ) {
             Text (
-                text = "Create private room / direct message", // + serverDomain,
-                fontSize = TextUnit(15f, TextUnitType.Sp)
+                "Create private room / direct message",
+                3.5f,
+                align = TextAlign.Center
             )
+            Spacer(Modifier.height(5.dp))
             var statusColor = Color.White
             if(createStatus != null && createStatus != CreateStatus.CREATING) {
                 if (createStatus!! != CreateStatus.SUCCESS) statusColor = Color.Red
                 else statusColor = Color.Green
             }
             Text (
-                text = if(createStatus != null) createStatus!!.text else "",
+                if(createStatus != null) createStatus!!.text else "",
                 color = statusColor
             )
-            Row {
-                Text("Private chat", Modifier.align(Alignment.CenterVertically).clickable { directMessageRoom = !directMessageRoom })
-                Checkbox(directMessageRoom, {directMessageRoom = it})
+            val shape = RoundedCornerShape(10.dp)
+            Box(Modifier.fillMaxWidth().background(colorResource(R.color.section), shape).border(0.5.dp, colorResource(R.color.border), shape).padding(13.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Box(modifier = Modifier.background(colorResource(R.color.accent_button), CircleShape).padding(8.dp)) {
+                        Icon(Icons.Default.Person, "Account icon")
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Direct message")
+                        Text("Only the invited user can join", 2.5f, color = colorResource(R.color.text_info))
+                    }
+                    Switch(directMessageRoom, {directMessageRoom = it}, colors = SwitchDefaults.colors(
+                        uncheckedBorderColor = Color.Transparent,
+                        uncheckedTrackColor = colorResource(R.color.placeholder),
+                        checkedTrackColor = colorResource(R.color.text_accent),
+                        checkedThumbColor = colorResource(R.color.text),
+                    ))
+                }
             }
+            Spacer(Modifier.height(5.dp))
             if(!directMessageRoom) {
-                EditStringField(text = "room name",
+                EditStringField(labelText = "room name",
+                    placeholderText = "e.g Project X",
                     value = roomName,
                     onValueChanged = {roomName = it},
                     modifier = Modifier.fillMaxWidth()
                 )
             }
             Spacer(Modifier.height(5.dp))
-            EditStringField(text = "user to invite",
+            EditStringField(labelText = "user to invite",
+                placeholderText = "username or username:server.domain",
                 value = inviteUserName,
                 onValueChanged = {inviteUserName = it.trim()},
                 modifier = Modifier.fillMaxWidth()
             )
-            Text("Only username is enough,\nif the user is on the same server", textAlign = TextAlign.Center, fontSize = MaterialTheme.typography.bodySmall.fontSize)
+            Spacer(Modifier.height(10.dp))
+            Text("Username is enough,\nif the user is on the same server", size = 2.5f, align = TextAlign.Center)
             Spacer(Modifier.height(20.dp))
-            Row {
-                TextButton("Cancel",{onClose()})
-                Spacer(modifier = Modifier.width(20.dp))
-                TextButton("Create", {create()})
+            Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                TextButton("Cancel",{onClose()}, modifier = Modifier.weight(1f))
+                TextButton("Create", {create()}, modifier = Modifier.weight(1f), color = colorResource(R.color.accent_button))
             }
         }
     }
@@ -486,15 +546,13 @@ fun RoomSelectorPopup(context: Context?, serverDomain: String, userName: String,
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text (
-                text = "Room selector",
-                fontSize = TextUnit(15f, TextUnitType.Sp)
+            Text ("Room selector",
+                size = 15f,
             )
 
             var statusColor = Color.White
             if(selectStatus != null && selectStatus != SelectStatus.GETTING_DATA) statusColor = Color.Red
-            Text (
-                text = if(selectStatus != null) selectStatus!!.text else "",
+            Text (if(selectStatus != null) selectStatus!!.text else "",
                 color = statusColor
             )
 
@@ -504,7 +562,7 @@ fun RoomSelectorPopup(context: Context?, serverDomain: String, userName: String,
                 IconButton({refresh()}, Modifier.align(Alignment.CenterVertically)) { Icon(Icons.Filled.Refresh, "Refresh") }
             }
             Spacer(Modifier.height(5.dp))
-            Text (text = "Refreshing also accepts invites", color = colorResource(R.color.text_info))
+            Text ("Refreshing also accepts invites", color = colorResource(R.color.text_info))
             Spacer(Modifier.height(10.dp))
             Row {
                 TextButton("Cancel", {onClose()})
@@ -523,7 +581,7 @@ fun SettingsPreview() {
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            MatrixConfigUI(null, MatrixConfig("", "", "", "", ""), onSave = {}, onBack = {})
+            MatrixConfigUI(null, MatrixConfig("abc.domain", "username_here", "aaa", "aaa", "muuh"), onSave = {}, onBack = {})
         }
     }
 }

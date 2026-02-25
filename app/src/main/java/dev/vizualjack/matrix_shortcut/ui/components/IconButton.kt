@@ -17,7 +17,7 @@ fun IconButton(
     content: @Composable () -> Unit,
 ) {
     androidx.compose.material3.IconButton(onClick = {onClick()},
-        modifier = modifier.background(colorResource(R.color.icon_button), CircleShape)
+        modifier = modifier.background(colorResource(R.color.button), CircleShape)
     ) {
         content()
     }

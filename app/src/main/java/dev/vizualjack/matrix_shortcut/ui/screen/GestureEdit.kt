@@ -99,7 +99,7 @@ fun GestureEdit(editGesture: Gesture?, onSave: (gesture: Gesture) -> Unit, onBac
         }
         Spacer(modifier = Modifier.height(32.dp))
         EditStringField(
-            text = "name",
+            labelText = "name",
             value = name,
             onValueChanged = {
                 name = it
@@ -107,7 +107,7 @@ fun GestureEdit(editGesture: Gesture?, onSave: (gesture: Gesture) -> Unit, onBac
         )
         Spacer(modifier = Modifier.height(10.dp))
         EditStringField(
-            text = "message",
+            labelText = "message",
             value = message,
             onValueChanged = {
                 message = it

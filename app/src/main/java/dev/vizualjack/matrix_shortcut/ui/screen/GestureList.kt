@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -38,7 +39,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.colorResource
@@ -53,7 +53,9 @@ import dev.vizualjack.matrix_shortcut.core.GestureDetectorService
 import dev.vizualjack.matrix_shortcut.core.isAccessibilityServiceEnabled
 import dev.vizualjack.matrix_shortcut.ui.components.Button
 import dev.vizualjack.matrix_shortcut.ui.components.IconButton
+import dev.vizualjack.matrix_shortcut.ui.components.Popup
 import dev.vizualjack.matrix_shortcut.ui.components.Text
+import dev.vizualjack.matrix_shortcut.ui.components.TextButton
 import dev.vizualjack.matrix_shortcut.ui.theme.AppTheme
 
 
@@ -62,6 +64,23 @@ import dev.vizualjack.matrix_shortcut.ui.theme.AppTheme
 fun GestureList(activity:AppActivity?, gestures: List<Gesture>, newGesture:() -> Unit, openGesture:(Gesture) -> Unit, onSettingsClick:() -> Unit) {
     var expanded by remember { mutableStateOf(false) }
 
+    if (expanded) {
+        ImportExportPopup(
+            {
+                activity!!.importRequest()
+                expanded = false
+            },
+            {
+                activity!!.exportRequest()
+                expanded = false
+            },
+            {
+                expanded = false
+            }
+        )
+    }
+
+
     Column {
         Box(
             modifier = Modifier.padding(16.dp)
@@ -69,35 +88,8 @@ fun GestureList(activity:AppActivity?, gestures: List<Gesture>, newGesture:() ->
             Box(
                 contentAlignment = Alignment.TopStart
             ) {
-                ExposedDropdownMenuBox(
-                    expanded = expanded,
-                    onExpandedChange = {
-                        expanded = !expanded
-                    }
-                ) {
-                    IconButton(onClick = {}, modifier = Modifier.menuAnchor()) {
-                        Icon(imageVector = Icons.Default.List, contentDescription = "Menu", Modifier.size(30.dp))
-                    }
-                    ExposedDropdownMenu(
-                        modifier = Modifier.width(100.dp).background(colorResource(R.color.dropdown)),
-                        expanded = expanded,
-                        onDismissRequest = {expanded = false},
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Import", color = colorResource(R.color.text)) },
-                            onClick = {
-                                activity!!.importRequest()
-                                expanded = false
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Export", color = colorResource(R.color.text)) },
-                            onClick = {
-                                activity!!.exportRequest()
-                                expanded = false
-                            }
-                        )
-                    }
+                IconButton(onClick = {expanded = true}) {
+                    Icon(imageVector = Icons.Default.List, contentDescription = "Menu", Modifier.size(30.dp))
                 }
             }
 
@@ -132,7 +124,7 @@ fun GestureList(activity:AppActivity?, gestures: List<Gesture>, newGesture:() ->
             contentAlignment = Alignment.BottomCenter
         ) {
             Button(
-                color = colorResource(R.color.icon_button),
+                color = colorResource(R.color.button),
                 onClick = {
                     if(serviceEnabled) return@Button
                     val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
@@ -155,7 +147,7 @@ fun GestureList(activity:AppActivity?, gestures: List<Gesture>, newGesture:() ->
 @Composable
 fun ListEntry(text: String, onClick: () -> Unit, addStyle: Boolean = false) {
     val roundedCornerShape = RoundedCornerShape(10.dp)
-    val buttonColor = colorResource(R.color.icon_button)
+    val buttonColor = colorResource(R.color.button)
     var modifier = Modifier.height(75.dp)
                 .fillMaxWidth()
                 .padding(5.dp)
@@ -195,6 +187,21 @@ fun ListEntry(text: String, onClick: () -> Unit, addStyle: Boolean = false) {
                 }
             }
 
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ImportExportPopup(onImport: () -> Unit, onExport: () -> Unit, onClose: () -> Unit) {
+    Popup({ onClose() }, Alignment.BottomCenter, Modifier.offset(0.dp, 20.dp)) {
+        Column(
+            modifier = Modifier.fillMaxWidth().height(150.dp).padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
+        ) {
+            TextButton("Import configuration", {}, modifier = Modifier.fillMaxWidth())
+            TextButton("Export configuration", {}, modifier = Modifier.fillMaxWidth())
         }
     }
 }
