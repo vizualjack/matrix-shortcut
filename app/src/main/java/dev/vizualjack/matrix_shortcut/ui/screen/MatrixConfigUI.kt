@@ -3,6 +3,7 @@ package dev.vizualjack.matrix_shortcut.ui.screen
 import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,7 +15,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -79,57 +82,6 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
 
     var shownPopup by remember { mutableStateOf(ShownPopup.NONE) }
 
-    if (shownPopup == ShownPopup.LOGIN) {
-        if(serverDomain != null && serverDomain != "") {
-            LoginPopup(
-                if(activity != null) activity.applicationContext else null,
-                serverDomain!!,
-                onSuccessLogin = { loginData ->
-                    userName = loginData.userName
-                    accessToken = loginData.accessToken
-                    refreshToken = loginData.refreshToken
-                },
-                onClose = { shownPopup = ShownPopup.NONE }
-            )
-        }
-        else {
-            activity?.sendToastText("Please provide a server domain first")
-            shownPopup = ShownPopup.NONE
-        }
-    }
-
-    if (shownPopup != ShownPopup.NONE && shownPopup != ShownPopup.LOGIN) {
-        if(serverDomain == null || serverDomain == "" || accessToken == null || accessToken == "") {
-            activity?.sendToastText("Please login first")
-            shownPopup = ShownPopup.NONE
-        }
-        else if (shownPopup == ShownPopup.ROOM_CREATOR) {
-            RoomCreatorPopup(
-                if(activity != null) activity.applicationContext else null,
-                serverDomain!!,
-                userName!!,
-                accessToken!!,
-                refreshToken,
-                onRoomCreated = { roomId ->
-                    targetRoom = roomId
-                },
-                onClose = { shownPopup = ShownPopup.NONE }
-            )
-        } else if (shownPopup == ShownPopup.ROOM_SELECTOR) {
-            RoomSelectorPopup(
-                if(activity != null) activity.applicationContext else null,
-                serverDomain!!,
-                userName!!,
-                accessToken!!,
-                refreshToken,
-                onRoomSelected = { roomId ->
-                    targetRoom = roomId
-                },
-                onClose = { shownPopup = ShownPopup.NONE }
-            )
-        }
-    }
-
     fun save() {
         onSave(MatrixConfig(serverDomain, userName, accessToken, refreshToken, targetRoom))
         onBack()
@@ -151,6 +103,7 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
 
     Column(
         modifier = Modifier
+            .systemBarsPadding()
             .padding(16.dp)
             .fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -237,6 +190,57 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
         Row(horizontalArrangement = Arrangement.spacedBy(15.dp), verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxHeight(1f)) {
             TextButton("Cancel", {onBack()}, modifier = Modifier.weight(1f))
             TextButton("Save", {save()}, modifier = Modifier.weight(1f))
+        }
+    }
+
+    if (shownPopup == ShownPopup.LOGIN) {
+        if(serverDomain != null && serverDomain != "") {
+            LoginPopup(
+                if(activity != null) activity.applicationContext else null,
+                serverDomain!!,
+                onSuccessLogin = { loginData ->
+                    userName = loginData.userName
+                    accessToken = loginData.accessToken
+                    refreshToken = loginData.refreshToken
+                },
+                onClose = { shownPopup = ShownPopup.NONE }
+            )
+        }
+        else {
+            activity?.sendToastText("Please provide a server domain first")
+            shownPopup = ShownPopup.NONE
+        }
+    }
+
+    if (shownPopup != ShownPopup.NONE && shownPopup != ShownPopup.LOGIN) {
+        if(serverDomain == null || serverDomain == "" || accessToken == null || accessToken == "") {
+            activity?.sendToastText("Please login first")
+            shownPopup = ShownPopup.NONE
+        }
+        else if (shownPopup == ShownPopup.ROOM_CREATOR) {
+            RoomCreatorPopup(
+                if(activity != null) activity.applicationContext else null,
+                serverDomain!!,
+                userName!!,
+                accessToken!!,
+                refreshToken,
+                onRoomCreated = { roomId ->
+                    targetRoom = roomId
+                },
+                onClose = { shownPopup = ShownPopup.NONE }
+            )
+        } else if (shownPopup == ShownPopup.ROOM_SELECTOR) {
+            RoomSelectorPopup(
+                if(activity != null) activity.applicationContext else null,
+                serverDomain!!,
+                userName!!,
+                accessToken!!,
+                refreshToken,
+                onRoomSelected = { roomId ->
+                    targetRoom = roomId
+                },
+                onClose = { shownPopup = ShownPopup.NONE }
+            )
         }
     }
 }
@@ -485,7 +489,7 @@ fun RoomSelectorPopup(context: Context?, serverDomain: String, userName: String,
     var selectedRoom by rememberSaveable { mutableStateOf<Room?>(null) }
     var rooms by rememberSaveable { mutableStateOf(listOf<Room>()) }
 
-    var selectStatus by rememberSaveable { mutableStateOf<SelectStatus?>(null) }
+    var selectStatus by rememberSaveable { mutableStateOf<SelectStatus?>(SelectStatus.NEED_TO_SELECT_A_ROOM) }
 
     fun loadRooms() {
         if(context == null) return
@@ -546,9 +550,18 @@ fun RoomSelectorPopup(context: Context?, serverDomain: String, userName: String,
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text ("Room selector",
-                size = 15f,
-            )
+            Row(Modifier.fillMaxWidth()) {
+                Column(Modifier.weight(1f)){
+                    Text ("Room selector",
+                        size = 3.5f,
+                        align = TextAlign.Left
+                    )
+                    Text ("Refreshing also accepts invites", color = colorResource(R.color.text_info))
+                }
+                IconButton({refresh()}, Modifier.align(Alignment.CenterVertically)) { Icon(Icons.Filled.Refresh, "Refresh") }
+            }
+
+            Spacer(Modifier.height(5.dp))
 
             var statusColor = Color.White
             if(selectStatus != null && selectStatus != SelectStatus.GETTING_DATA) statusColor = Color.Red
@@ -556,19 +569,35 @@ fun RoomSelectorPopup(context: Context?, serverDomain: String, userName: String,
                 color = statusColor
             )
 
-            Row {
-                Dropdown(selectedRoom, rooms.toTypedArray(), {selectedRoom = it }, Modifier.fillMaxWidth(0.85f))
-                Spacer(Modifier.width(10.dp))
-                IconButton({refresh()}, Modifier.align(Alignment.CenterVertically)) { Icon(Icons.Filled.Refresh, "Refresh") }
+            Spacer(Modifier.height(14.dp))
+
+            Column(Modifier.fillMaxHeight(0.5f)) {
+                val roomsList = rooms.toTypedArray()
+                LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    items(roomsList.size) { index ->
+                        val room = roomsList[index]
+                        RoomSelectorEntry(room.displayName, room.membersAmount,selectedRoom == room, {selectedRoom = room})
+                    }
+                }
             }
-            Spacer(Modifier.height(5.dp))
-            Text ("Refreshing also accepts invites", color = colorResource(R.color.text_info))
-            Spacer(Modifier.height(10.dp))
-            Row {
-                TextButton("Cancel", {onClose()})
-                Spacer(modifier = Modifier.width(20.dp))
-                TextButton("Select", {select()})
+            Spacer(Modifier.height(14.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton("Cancel", {onClose()}, Modifier.weight(1f))
+                TextButton("Select", {select()}, Modifier.weight(1f), color = colorResource(R.color.accent_button))
             }
+        }
+    }
+}
+
+@Composable
+fun RoomSelectorEntry(name: String, members: Int, selected: Boolean, onClick: () -> Unit) {
+    Box(Modifier.fillMaxWidth().background(if(selected) colorResource(R.color.accent_button) else colorResource(R.color.text_input), RoundedCornerShape(10.dp)).clickable { onClick() }) {
+        Row(Modifier.padding(14.dp)) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(name)
+                Text("$members Members", color = colorResource(R.color.text_info))
+            }
+            if(selected) Text("Selected", color = colorResource(R.color.text_accent))
         }
     }
 }

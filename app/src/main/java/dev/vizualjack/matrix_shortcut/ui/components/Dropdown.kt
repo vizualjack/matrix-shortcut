@@ -2,6 +2,7 @@ package dev.vizualjack.matrix_shortcut.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -28,6 +29,7 @@ fun <T> Dropdown(
     values: Array<T>,
     onChange: (T) -> Unit,
     modifier: Modifier = Modifier,
+    transparentBackground: Boolean = false,
 ) {
     var expanded by remember { mutableStateOf(false) }
     Box(
@@ -37,7 +39,8 @@ fun <T> Dropdown(
             expanded = expanded,
             onExpandedChange = {
                 expanded = !expanded
-            }
+            },
+            modifier = Modifier.fillMaxHeight()
         ) {
             TextField(
                 value = if(value != null) value.toString() else "",
@@ -52,7 +55,7 @@ fun <T> Dropdown(
                     unfocusedLabelColor = colorResource(R.color.text),
                     disabledLabelColor = colorResource(R.color.text),
                     errorLabelColor = colorResource(R.color.text),
-                    containerColor = colorResource(R.color.text_input),
+                    containerColor = if(transparentBackground) Color.Transparent else colorResource(R.color.text_input),
                     disabledIndicatorColor = Color.Transparent,
                     focusedIndicatorColor = Color.Transparent,
                     errorIndicatorColor = Color.Transparent,

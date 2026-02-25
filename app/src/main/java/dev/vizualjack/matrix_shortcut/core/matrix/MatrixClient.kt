@@ -106,13 +106,13 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
         if(!joinedRoomsResponse.success) return Result(false, joinedRoomsResponse.error)
         val rooms = arrayListOf<Room>()
         for (roomId in joinedRoomsResponse.value!!.joined_rooms) {
+            val joinedMembersResponse = joinedMembersRequest(roomId)
+            if(!joinedMembersResponse.success) return Result(false, joinedMembersResponse.error)
+            val members = joinedMembersResponse.value!!.getMembers()
             val roomNameResponse = roomNameRequest(roomId)
             if(!roomNameResponse.success) return Result(false, roomNameResponse.error)
             var roomName = roomNameResponse.value!!.name
             if(roomName == null) {
-                val joinedMembersResponse = joinedMembersRequest(roomId)
-                if(!joinedMembersResponse.success) return Result(false, joinedMembersResponse.error)
-                val members = joinedMembersResponse.value!!.getMembers()
                 var chatPartnerMember: Member? = null
                 for (member in members) {
                     if(member.userName == userName) continue
@@ -122,7 +122,7 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
                 if (chatPartnerMember == null) roomName = roomId
                 else roomName = chatPartnerMember.display_name
             }
-            rooms.add(Room(roomId, roomName))
+            rooms.add(Room(roomId, roomName, members.size))
         }
         return Result(true, null, rooms)
     }

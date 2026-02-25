@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -64,24 +65,7 @@ import dev.vizualjack.matrix_shortcut.ui.theme.AppTheme
 fun GestureList(activity:AppActivity?, gestures: List<Gesture>, newGesture:() -> Unit, openGesture:(Gesture) -> Unit, onSettingsClick:() -> Unit) {
     var expanded by remember { mutableStateOf(false) }
 
-    if (expanded) {
-        ImportExportPopup(
-            {
-                activity!!.importRequest()
-                expanded = false
-            },
-            {
-                activity!!.exportRequest()
-                expanded = false
-            },
-            {
-                expanded = false
-            }
-        )
-    }
-
-
-    Column {
+    Column(modifier = Modifier.systemBarsPadding()) {
         Box(
             modifier = Modifier.padding(16.dp)
         ) {
@@ -142,6 +126,22 @@ fun GestureList(activity:AppActivity?, gestures: List<Gesture>, newGesture:() ->
             }
         }
     }
+
+    if (expanded) {
+        ImportExportPopup(
+            {
+                activity!!.importRequest()
+                expanded = false
+            },
+            {
+                activity!!.exportRequest()
+                expanded = false
+            },
+            {
+                expanded = false
+            }
+        )
+    }
 }
 
 @Composable
@@ -196,12 +196,12 @@ fun ListEntry(text: String, onClick: () -> Unit, addStyle: Boolean = false) {
 fun ImportExportPopup(onImport: () -> Unit, onExport: () -> Unit, onClose: () -> Unit) {
     Popup({ onClose() }, Alignment.BottomCenter, Modifier.offset(0.dp, 20.dp)) {
         Column(
-            modifier = Modifier.fillMaxWidth().height(150.dp).padding(20.dp),
+            modifier = Modifier.fillMaxWidth().height(200.dp).padding(10.dp, 30.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            TextButton("Import configuration", {}, modifier = Modifier.fillMaxWidth())
-            TextButton("Export configuration", {}, modifier = Modifier.fillMaxWidth())
+            TextButton("Import configuration", {onImport()}, modifier = Modifier.fillMaxWidth())
+            TextButton("Export configuration", {onExport()}, modifier = Modifier.fillMaxWidth())
         }
     }
 }

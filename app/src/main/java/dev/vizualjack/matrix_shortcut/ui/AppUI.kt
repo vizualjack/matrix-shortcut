@@ -67,7 +67,6 @@ fun AppUI(
         NavHost(
             navController = navController,
             startDestination = startLocation,
-            modifier = Modifier.systemBarsPadding()
         ) {
             composable(route = Location.MatrixConfig.name) {
                 MatrixConfigUI(activity,
