@@ -27,6 +27,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalAutofill
 import androidx.compose.ui.platform.LocalAutofillTree
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -47,6 +48,6 @@ fun Text(
     align: TextAlign = TextAlign.Left,
     modifier: Modifier = Modifier,
 ) {
-    Text(content, modifier, color, TextUnit(size, TextUnitType.Em), fontWeight = fontWeight, textAlign = align)
+    Text(content, modifier, color, TextUnit(size, TextUnitType.Em), fontWeight = fontWeight, textAlign = align, fontFamily = FontFamily.Default)
 }
 

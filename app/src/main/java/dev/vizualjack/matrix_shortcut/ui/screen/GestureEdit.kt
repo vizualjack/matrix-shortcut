@@ -24,11 +24,13 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,7 +39,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -100,7 +106,7 @@ fun GestureEdit(editGesture: Gesture?, onSave: (gesture: Gesture) -> Unit, onBac
             }
 
             Text(
-                "Edit shortcut",
+                (if(editGesture != null) "Edit" else "Add") + " shortcut",
                 color = colorResource(R.color.text),
                 size = 4f,
                 fontWeight = FontWeight.Bold,
@@ -135,7 +141,7 @@ fun GestureEdit(editGesture: Gesture?, onSave: (gesture: Gesture) -> Unit, onBac
         Row {
             Text("Keystrokes", 4f, modifier = Modifier.weight(1f))
             Box(Modifier.background(colorResource(R.color.accent_button), RoundedCornerShape(99.dp)).padding(8.dp, 4.dp)) {
-                Text("99 STEPS", color = colorResource(R.color.text_accent))
+                Text(gestureEntries.size.toString() + " STEPS", color = colorResource(R.color.text_accent))
             }
         }
         Spacer(modifier = Modifier.height(5.dp))
@@ -164,6 +170,7 @@ fun GestureEdit(editGesture: Gesture?, onSave: (gesture: Gesture) -> Unit, onBac
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GestureEditEntry(gestureElement: GestureEntry, deleteGestureElement:() -> Unit) {
     var keyCodeValue = KeyCode.UNKNOWN
@@ -179,7 +186,7 @@ fun GestureEditEntry(gestureElement: GestureEntry, deleteGestureElement:() -> Un
                 keyCode = it
                 gestureElement.keyCode = keyCode.value
             },
-                modifier = Modifier.width(150.dp),
+                modifier = Modifier.width(150.dp).height(TextFieldDefaults.MinHeight),
                 transparentBackground = true
             )
             Spacer(modifier = Modifier.weight(1f))
@@ -207,14 +214,29 @@ fun GestureEditEntry(gestureElement: GestureEntry, deleteGestureElement:() -> Un
 
 @Composable
 fun NewGestureEntry(text: String, onClick: () -> Unit) {
-    Box(Modifier.border(1.dp, colorResource(R.color.border), RoundedCornerShape(10.dp)).fillMaxWidth().clickable { onClick() }) {
+    val color = colorResource(R.color.button)
+    val modifier = Modifier.drawBehind {
+        drawRoundRect(
+            color = color,
+            size = size,
+            cornerRadius = CornerRadius(10.dp.toPx(), 10.dp.toPx()),
+            style = Stroke(
+                width = 3.dp.toPx(),
+                pathEffect = PathEffect.dashPathEffect(
+                    floatArrayOf(10f, 10f),
+                    0f
+                )
+            )
+        )
+    }
+
+    Box(modifier.fillMaxWidth().clickable { onClick() }) {
         Row(modifier = Modifier.padding(15.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
             Icon(Icons.Filled.AddCircle, "Add gesture element")
             Spacer(Modifier.width(10.dp))
             Text(text)
         }
     }
-
 }
 @Preview(showBackground = true)
 @Composable
