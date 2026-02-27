@@ -58,7 +58,9 @@ import dev.vizualjack.matrix_shortcut.ui.KeyCode
 import dev.vizualjack.matrix_shortcut.ui.components.Dropdown
 import dev.vizualjack.matrix_shortcut.ui.components.EditNumberField
 import dev.vizualjack.matrix_shortcut.ui.components.EditStringField
+import dev.vizualjack.matrix_shortcut.ui.components.Screen
 import dev.vizualjack.matrix_shortcut.ui.theme.AppTheme
+import dev.vizualjack.matrix_shortcut.ui.theme.dashedBorder
 import dev.vizualjack.matrix_shortcut.ui.theme.spacing
 
 
@@ -84,92 +86,75 @@ fun GestureEdit(editGesture: Gesture?, onSave: (gesture: Gesture) -> Unit, onBac
         onBack()
     }
 
-    Column(
-        modifier = Modifier
-            .systemBarsPadding()
-            .padding(16.dp)
-            .fillMaxSize(),
-        horizontalAlignment = Alignment.Start,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Box {
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.TopStart
-            ) {
-                IconButton(onClick = { onBack() }) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Back",
-                        Modifier.size(30.dp)
-                    )
-                }
+    Screen({
+            IconButton(onClick = { onBack() }) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Back",
+                    Modifier.align(Alignment.CenterStart)
+                )
             }
 
-            Text(
-                (if(editGesture != null) "Edit" else "Add") + " shortcut"
+            Text((if(editGesture != null) "Edit" else "Add") + " shortcut", Modifier.align(Alignment.Center))
+    },{
+        Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.lg)) {
+            EditStringField(
+                labelText = "Name",
+                value = name,
+                onValueChanged = {
+                    name = it
+                },
+                modifier = Modifier.fillMaxWidth()
             )
 
-//            color = colorResource(R.color.text),
-//            size = 4f,
-//            fontWeight = FontWeight.Bold,
-//            modifier = Modifier.align(Alignment.Center)
-        }
+            EditStringField(
+                labelText = "Message to send",
+                value = message,
+                onValueChanged = {
+                    message = it
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
 
-        Spacer(modifier = Modifier.height(10.dp))
+            Row {
+                Text("Keystrokes", Modifier.weight(1f))
 
-        EditStringField(
-            labelText = "Name",
-            value = name,
-            onValueChanged = {
-                name = it
-            },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        EditStringField(
-            labelText = "Message to send",
-            value = message,
-            onValueChanged = {
-                message = it
-            },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        Row {
-            Text("Keystrokes", Modifier.weight(1f))
-            Box(Modifier.background(colorResource(R.color.accent_button), RoundedCornerShape(99.dp)).padding(8.dp, 4.dp)) {
-                Text(gestureEntries.size.toString() + " STEPS", color = colorResource(R.color.text_accent))
-            }
-        }
-        Spacer(modifier = Modifier.height(5.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(gestureEntries.size) { index ->
-                    GestureEditEntry(
-                        gestureElement = gestureEntries[index],
-                        deleteGestureElement = {
-                            gestureEntries = gestureEntries.toMutableList().apply { remove(gestureEntries[index]) } as ArrayList<GestureEntry>
-                        }
-                    )
+                Box(Modifier
+                    .background(MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.shapes.extraLarge)
+                    .padding(MaterialTheme.spacing.sm, MaterialTheme.spacing.xs)
+                ) {
+                    Text(gestureEntries.size.toString() + " STEPS")
                 }
             }
-            Spacer(Modifier.height(10.dp))
-            NewGestureEntry("Add keystroke", onClick = {
-                gestureEntries = (gestureEntries + GestureEntry(KeyCode.VOLUME_UP.value, 0)) as ArrayList<GestureEntry>
-            })
-        }
 
-        Spacer(modifier = Modifier.height(20.dp))
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            if(editGesture != null) Button({onBack()}, Modifier.fillMaxWidth()) { Text("Delete shortcut") }
-            Button({save()}, Modifier.fillMaxWidth()) { Text("Save shortcut") }
+            Column(modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.lg)
+                ) {
+                LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)) {
+                    items(gestureEntries.size) { index ->
+                        GestureEditEntry(
+                            gestureElement = gestureEntries[index],
+                            deleteGestureElement = {
+                                gestureEntries = gestureEntries.toMutableList().apply { remove(gestureEntries[index]) } as ArrayList<GestureEntry>
+                            }
+                        )
+                    }
+                }
+
+                NewGestureEntry("Add keystroke", onClick = {
+                    gestureEntries = (gestureEntries + GestureEntry(KeyCode.VOLUME_UP.value, 0)) as ArrayList<GestureEntry>
+                })
+            }
+
+            Column(
+                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                if(editGesture != null) Button({delete()}, Modifier.fillMaxWidth()) { Text("Delete shortcut") }
+                Button({save()}, Modifier.fillMaxWidth()) { Text("Save shortcut") }
+            }
         }
-    }
+    })
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -182,8 +167,15 @@ fun GestureEditEntry(gestureElement: GestureEntry, deleteGestureElement:() -> Un
     var keyCode by remember { mutableStateOf(keyCodeValue) }
     var minDuration by remember { mutableStateOf(gestureElement.minDuration) }
 
-    Box(Modifier.border(1.dp, color = colorResource(R.color.border), RoundedCornerShape(10.dp)).background(colorResource(R.color.floating_link)).fillMaxWidth()) {
-        Row(modifier = Modifier.padding(15.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+    Box(Modifier
+        .border(1.dp, color = MaterialTheme.colorScheme.primary, MaterialTheme.shapes.medium)
+        .background(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.shapes.medium)
+        .fillMaxWidth()
+    ) {
+        Row(modifier = Modifier.padding(MaterialTheme.spacing.lg, MaterialTheme.spacing.sm).fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
             Dropdown(keyCode, KeyCode.values().filter { it != KeyCode.UNKNOWN }.toTypedArray(), {
                 keyCode = it
                 gestureElement.keyCode = keyCode.value
@@ -203,10 +195,10 @@ fun GestureEditEntry(gestureElement: GestureEntry, deleteGestureElement:() -> Un
                 transparentBackground = true
             )
             Text("ms")
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(modifier = Modifier.width(MaterialTheme.spacing.lg))
             IconButton(
                 onClick = { deleteGestureElement() },
-                modifier = Modifier.align(Alignment.CenterVertically).width(20.dp),
+                modifier = Modifier.align(Alignment.CenterVertically).width(30.dp),
             ) {
                 Icon(Icons.Filled.Delete, "Delete entry")
             }
@@ -216,26 +208,12 @@ fun GestureEditEntry(gestureElement: GestureEntry, deleteGestureElement:() -> Un
 
 @Composable
 fun NewGestureEntry(text: String, onClick: () -> Unit) {
-    val color = colorResource(R.color.button)
-    val modifier = Modifier.drawBehind {
-        drawRoundRect(
-            color = color,
-            size = size,
-            cornerRadius = CornerRadius(10.dp.toPx(), 10.dp.toPx()),
-            style = Stroke(
-                width = 3.dp.toPx(),
-                pathEffect = PathEffect.dashPathEffect(
-                    floatArrayOf(10f, 10f),
-                    0f
-                )
-            )
-        )
-    }
+    val modifier = Modifier.dashedBorder(MaterialTheme.colorScheme.primary)
 
     Box(modifier.fillMaxWidth().clickable { onClick() }) {
-        Row(modifier = Modifier.padding(15.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+        Row(modifier = Modifier.padding(MaterialTheme.spacing.lg).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
             Icon(Icons.Filled.AddCircle, "Add gesture element")
-            Spacer(Modifier.width(10.dp))
+            Spacer(Modifier.width(MaterialTheme.spacing.md))
             Text(text)
         }
     }

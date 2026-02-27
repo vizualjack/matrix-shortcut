@@ -102,7 +102,11 @@ fun GestureList(activity:AppActivity?, gestures: List<Gesture>, newGesture:() ->
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
                     ) {
-                        Box(Modifier.width(8.dp).height(8.dp).background(if(serviceEnabled) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error, CircleShape))
+                        Box(Modifier
+                            .width(MaterialTheme.spacing.sm)
+                            .height(MaterialTheme.spacing.sm)
+                            .background(if(serviceEnabled) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error, CircleShape)
+                        )
                         Text(if(serviceEnabled) "Service is active" else "Please activate the service")
                     }
                 }

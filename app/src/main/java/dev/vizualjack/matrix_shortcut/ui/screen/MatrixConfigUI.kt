@@ -104,8 +104,7 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
         IconButton(onClick = {onBack()}, Modifier.align(Alignment.TopStart)) {
             Icon(
                 imageVector = Icons.Default.ArrowBack,
-                contentDescription = "Back",
-                Modifier.size(30.dp)
+                contentDescription = "Back"
             )
         }
 
@@ -113,7 +112,7 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
     },{
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
         ) {
             Section("Server settings") {
                 EditStringField(labelText = "Server domain",
@@ -124,7 +123,10 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
             }
 
             Section("User account") {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
+                ) {
                     Box(modifier = Modifier
                         .background(MaterialTheme.colorScheme.secondary, CircleShape)
                         .padding(MaterialTheme.spacing.sm)
@@ -142,7 +144,9 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
             }
 
             Section("Room configuration") {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)) {
                     EditStringField(
                         labelText = "Room id",
                         placeholderText = "abcdefgh:server.domain",
@@ -191,7 +195,11 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
                 }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.lg), verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxHeight(1f)) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.lg),
+                verticalAlignment = Alignment.Bottom,
+                modifier = Modifier.fillMaxHeight(1f)
+            ) {
                 Button({onBack()}) { Text("Cancel") }
                 Button({save()}) { Text("Save") }
             }
