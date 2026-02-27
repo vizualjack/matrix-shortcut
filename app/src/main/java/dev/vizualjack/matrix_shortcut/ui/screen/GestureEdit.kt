@@ -24,12 +24,14 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -53,12 +55,11 @@ import dev.vizualjack.matrix_shortcut.R
 import dev.vizualjack.matrix_shortcut.core.data.Gesture
 import dev.vizualjack.matrix_shortcut.core.data.GestureEntry
 import dev.vizualjack.matrix_shortcut.ui.KeyCode
-import dev.vizualjack.matrix_shortcut.ui.components.TextButton
 import dev.vizualjack.matrix_shortcut.ui.components.Dropdown
 import dev.vizualjack.matrix_shortcut.ui.components.EditNumberField
 import dev.vizualjack.matrix_shortcut.ui.components.EditStringField
-import dev.vizualjack.matrix_shortcut.ui.components.Text
 import dev.vizualjack.matrix_shortcut.ui.theme.AppTheme
+import dev.vizualjack.matrix_shortcut.ui.theme.spacing
 
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -106,12 +107,13 @@ fun GestureEdit(editGesture: Gesture?, onSave: (gesture: Gesture) -> Unit, onBac
             }
 
             Text(
-                (if(editGesture != null) "Edit" else "Add") + " shortcut",
-                color = colorResource(R.color.text),
-                size = 4f,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.align(Alignment.Center)
+                (if(editGesture != null) "Edit" else "Add") + " shortcut"
             )
+
+//            color = colorResource(R.color.text),
+//            size = 4f,
+//            fontWeight = FontWeight.Bold,
+//            modifier = Modifier.align(Alignment.Center)
         }
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -139,7 +141,7 @@ fun GestureEdit(editGesture: Gesture?, onSave: (gesture: Gesture) -> Unit, onBac
         Spacer(modifier = Modifier.height(10.dp))
 
         Row {
-            Text("Keystrokes", 4f, modifier = Modifier.weight(1f))
+            Text("Keystrokes", Modifier.weight(1f))
             Box(Modifier.background(colorResource(R.color.accent_button), RoundedCornerShape(99.dp)).padding(8.dp, 4.dp)) {
                 Text(gestureEntries.size.toString() + " STEPS", color = colorResource(R.color.text_accent))
             }
@@ -164,8 +166,8 @@ fun GestureEdit(editGesture: Gesture?, onSave: (gesture: Gesture) -> Unit, onBac
 
         Spacer(modifier = Modifier.height(20.dp))
         Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            if(editGesture != null) TextButton("Delete shortcut", {}, modifier = Modifier.fillMaxWidth())
-            TextButton("Save shortcut", {}, modifier = Modifier.fillMaxWidth(), color = colorResource(R.color.accent_button))
+            if(editGesture != null) Button({onBack()}, Modifier.fillMaxWidth()) { Text("Delete shortcut") }
+            Button({save()}, Modifier.fillMaxWidth()) { Text("Save shortcut") }
         }
     }
 }

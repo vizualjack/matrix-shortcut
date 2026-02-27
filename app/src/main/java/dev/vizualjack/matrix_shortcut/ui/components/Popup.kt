@@ -1,32 +1,31 @@
 package dev.vizualjack.matrix_shortcut.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import dev.vizualjack.matrix_shortcut.R
+import dev.vizualjack.matrix_shortcut.ui.theme.spacing
 
 
 @Composable
-fun Popup(onDismissRequest: () -> Unit, alignment: Alignment = Alignment.Center, modifier: Modifier = Modifier.padding(20.dp, 0.dp), content: @Composable () -> Unit) {
-    Box(Modifier.background(Color(0f,0f,0f,0.5f)).clickable { onDismissRequest() },
-        contentAlignment = alignment
-    ) {
+fun Popup(onDismissRequest: () -> Unit, alignment: Alignment = Alignment.Center, header: (@Composable () -> Unit)? = null, content: @Composable () -> Unit) {
+    Dialog(onDismissRequest = { onDismissRequest() }) {
         Box(
-            modifier = modifier.background(color = colorResource(R.color.popup), shape = MaterialTheme.shapes.medium),
+            Modifier.background(MaterialTheme.colorScheme.surface, MaterialTheme.shapes.medium),
+            alignment
         ) {
-            content()
+            Column(modifier = Modifier.padding(MaterialTheme.spacing.md), verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md), horizontalAlignment = Alignment.CenterHorizontally) {
+                if(header != null) header()
+                content()
+            }
         }
     }
 }
