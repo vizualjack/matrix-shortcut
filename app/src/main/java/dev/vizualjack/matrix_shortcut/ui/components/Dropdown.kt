@@ -49,6 +49,7 @@ import dev.vizualjack.matrix_shortcut.core.data.Gesture
 import dev.vizualjack.matrix_shortcut.core.data.GestureEntry
 import dev.vizualjack.matrix_shortcut.ui.screen.GestureEdit
 import dev.vizualjack.matrix_shortcut.ui.theme.AppTheme
+import dev.vizualjack.matrix_shortcut.ui.theme.spacing
 import kotlin.math.exp
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,14 +64,14 @@ fun <T> Dropdown(
     var expanded by remember { mutableStateOf(false) }
         Box (
             modifier = Modifier
-                .background(Color.Transparent, RoundedCornerShape(15.dp))
-                .padding(5.dp, 0.dp),
+                .background(if(transparentBackground) Color.Transparent else MaterialTheme.colorScheme.primary, MaterialTheme.shapes.large)
+                .padding(MaterialTheme.spacing.xs, 0.dp),
         ) {
-            Row(modifier.background(Color.Transparent).clickable { expanded = !expanded },
+            Row(modifier.clickable { expanded = !expanded },
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Text(value.toString())
+                Text(value.toString(), style = MaterialTheme.typography.labelLarge)
                 Icon(Icons.Default.KeyboardArrowDown, "Open dropdown", tint = colorResource(R.color.text))
             }
 
@@ -78,11 +79,11 @@ fun <T> Dropdown(
                 Surface({expanded = false}) {
                     Column {
                         values.forEach {
-                            Box(Modifier.padding(15.dp).clickable {
+                            Box(Modifier.padding(MaterialTheme.spacing.lg).clickable {
                                 onChange(it)
                                 expanded = false
                             }) {
-                                Text(it.toString())
+                                Text(it.toString(), style = MaterialTheme.typography.labelLarge)
                             }
 //                    DropdownMenuItem(
 //                        text = {  },

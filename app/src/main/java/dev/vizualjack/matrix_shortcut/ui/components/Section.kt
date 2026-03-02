@@ -12,21 +12,22 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.vizualjack.matrix_shortcut.R
 import dev.vizualjack.matrix_shortcut.ui.theme.spacing
 
 
 @Composable
-fun Section(header: String? = null, content: @Composable () -> Unit) {
+fun Section(header: String? = null, padding: Dp = MaterialTheme.spacing.md, content: @Composable () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.shapes.medium)
-            .padding(MaterialTheme.spacing.md),
+            .padding(padding),
     ) {
         Column (verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)) {
-            if(header != null) Text(header, color = colorResource(R.color.text_light))
+            if(header != null) Text(header)
             Box(modifier = Modifier.padding(MaterialTheme.spacing.xs)) { content() }
         }
     }

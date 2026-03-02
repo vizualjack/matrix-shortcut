@@ -10,11 +10,7 @@ import androidx.compose.ui.unit.sp
 import dev.vizualjack.matrix_shortcut.R
 
 val Typography = Typography(
-//    bodyLarge = TextStyle(
-//        fontFamily = FontFamily.Default,
-//        fontWeight = FontWeight.Normal,
-//        fontSize = 13.sp,
-//        lineHeight = 24.sp,
-//        letterSpacing = 0.5.sp,
-//    )
+    titleLarge = TextStyle(
+        fontSize = 20.sp,
+    )
 )

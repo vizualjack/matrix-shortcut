@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -26,6 +27,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import dev.vizualjack.matrix_shortcut.R
+import dev.vizualjack.matrix_shortcut.ui.theme.spacing
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
@@ -47,11 +49,11 @@ fun EditStringField(
     }
 
     if (placeholderText != "") placeholder = @Composable {
-        Text(placeholderText)
+        Text(placeholderText, style = MaterialTheme.typography.bodyLarge)
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (labelText != "") Text(labelText, color = colorResource(R.color.text_light))
+    Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)) {
+        if (labelText != "") Text(labelText, style = MaterialTheme.typography.labelLarge)
 
         TextField(
             value = value,
@@ -72,18 +74,19 @@ fun EditStringField(
             keyboardOptions = KeyboardOptions(keyboardType = if(hidden) KeyboardType.Password else KeyboardType.Text),
             visualTransformation = if(hidden) PasswordVisualTransformation() else VisualTransformation.None,
             colors = TextFieldDefaults.textFieldColors(
-                textColor = colorResource(R.color.text),
-                focusedLabelColor = colorResource(R.color.text_accent),
-                unfocusedLabelColor = colorResource(R.color.text),
-                disabledLabelColor = colorResource(R.color.text),
-                errorLabelColor = colorResource(R.color.text),
-                containerColor = colorResource(R.color.text_input),
+//                textColor = colorResource(R.color.text),
+//                focusedLabelColor = colorResource(R.color.text_accent),
+//                unfocusedLabelColor = colorResource(R.color.text),
+//                disabledLabelColor = colorResource(R.color.text),
+//                errorLabelColor = colorResource(R.color.text),
+//                containerColor = colorResource(R.color.text_input),
                 disabledIndicatorColor = Color.Transparent,
                 focusedIndicatorColor = Color.Transparent,
                 errorIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
             ),
             shape = ShapeDefaults.Small,
+            textStyle = MaterialTheme.typography.bodyLarge
         )
     }
 }

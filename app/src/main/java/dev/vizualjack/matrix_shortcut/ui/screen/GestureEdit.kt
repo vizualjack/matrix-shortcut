@@ -9,18 +9,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
@@ -29,7 +23,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
@@ -41,17 +34,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import dev.vizualjack.matrix_shortcut.R
 import dev.vizualjack.matrix_shortcut.core.data.Gesture
 import dev.vizualjack.matrix_shortcut.core.data.GestureEntry
 import dev.vizualjack.matrix_shortcut.ui.KeyCode
@@ -60,8 +45,9 @@ import dev.vizualjack.matrix_shortcut.ui.components.EditNumberField
 import dev.vizualjack.matrix_shortcut.ui.components.EditStringField
 import dev.vizualjack.matrix_shortcut.ui.components.Screen
 import dev.vizualjack.matrix_shortcut.ui.theme.AppTheme
-import dev.vizualjack.matrix_shortcut.ui.theme.dashedBorder
+import dev.vizualjack.matrix_shortcut.ui.dashedBorder
 import dev.vizualjack.matrix_shortcut.ui.theme.spacing
+import dev.vizualjack.matrix_shortcut.ui.theme.strokeWidth
 
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -95,7 +81,7 @@ fun GestureEdit(editGesture: Gesture?, onSave: (gesture: Gesture) -> Unit, onBac
                 )
             }
 
-            Text((if(editGesture != null) "Edit" else "Add") + " shortcut", Modifier.align(Alignment.Center))
+            Text((if(editGesture != null) "Edit" else "Add") + " shortcut", Modifier.align(Alignment.Center), style = MaterialTheme.typography.titleLarge)
     },{
         Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.lg)) {
             EditStringField(
@@ -116,14 +102,14 @@ fun GestureEdit(editGesture: Gesture?, onSave: (gesture: Gesture) -> Unit, onBac
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Row {
-                Text("Keystrokes", Modifier.weight(1f))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Keystrokes", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
 
                 Box(Modifier
                     .background(MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.shapes.extraLarge)
                     .padding(MaterialTheme.spacing.sm, MaterialTheme.spacing.xs)
                 ) {
-                    Text(gestureEntries.size.toString() + " STEPS")
+                    Text(gestureEntries.size.toString() + " STEPS", style = MaterialTheme.typography.labelLarge)
                 }
             }
 
@@ -168,7 +154,7 @@ fun GestureEditEntry(gestureElement: GestureEntry, deleteGestureElement:() -> Un
     var minDuration by remember { mutableStateOf(gestureElement.minDuration) }
 
     Box(Modifier
-        .border(1.dp, color = MaterialTheme.colorScheme.primary, MaterialTheme.shapes.medium)
+        .border(MaterialTheme.strokeWidth.normal, color = MaterialTheme.colorScheme.primary, MaterialTheme.shapes.medium)
         .background(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.shapes.medium)
         .fillMaxWidth()
     ) {
@@ -194,7 +180,7 @@ fun GestureEditEntry(gestureElement: GestureEntry, deleteGestureElement:() -> Un
                 textAlign = TextAlign.Right,
                 transparentBackground = true
             )
-            Text("ms")
+            Text("ms", style = MaterialTheme.typography.labelLarge)
             Spacer(modifier = Modifier.width(MaterialTheme.spacing.lg))
             IconButton(
                 onClick = { deleteGestureElement() },
@@ -208,13 +194,13 @@ fun GestureEditEntry(gestureElement: GestureEntry, deleteGestureElement:() -> Un
 
 @Composable
 fun NewGestureEntry(text: String, onClick: () -> Unit) {
-    val modifier = Modifier.dashedBorder(MaterialTheme.colorScheme.primary)
+    val modifier = Modifier.dashedBorder(MaterialTheme.colorScheme.primary, MaterialTheme.strokeWidth.normal)
 
     Box(modifier.fillMaxWidth().clickable { onClick() }) {
         Row(modifier = Modifier.padding(MaterialTheme.spacing.lg).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-            Icon(Icons.Filled.AddCircle, "Add gesture element")
+            Icon(Icons.Filled.AddCircle, "Add icon")
             Spacer(Modifier.width(MaterialTheme.spacing.md))
-            Text(text)
+            Text(text, style = MaterialTheme.typography.labelLarge)
         }
     }
 }

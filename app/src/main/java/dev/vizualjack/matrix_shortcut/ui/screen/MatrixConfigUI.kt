@@ -44,12 +44,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.AutofillType
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import dev.vizualjack.matrix_shortcut.AppActivity
 import dev.vizualjack.matrix_shortcut.R
 import dev.vizualjack.matrix_shortcut.core.data.MatrixConfig
+import dev.vizualjack.matrix_shortcut.core.matrix.MatrixChecker
 import dev.vizualjack.matrix_shortcut.core.matrix.MatrixClient
 import dev.vizualjack.matrix_shortcut.core.matrix.Room
 import dev.vizualjack.matrix_shortcut.ui.components.EditStringField
@@ -60,6 +62,7 @@ import dev.vizualjack.matrix_shortcut.ui.theme.AppTheme
 import dev.vizualjack.matrix_shortcut.ui.theme.spacing
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -80,6 +83,7 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
     var targetRoom by rememberSaveable { mutableStateOf(config.targetRoom) }
 
     var shownPopup by remember { mutableStateOf(ShownPopup.NONE) }
+    var domainCheckResult by remember { mutableStateOf<MatrixChecker.CheckResult?>(null) }
 
     fun save() {
         onSave(MatrixConfig(serverDomain, userName, accessToken, refreshToken, targetRoom))
@@ -100,6 +104,20 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
         }
     }
 
+    fun checkServerDomain(afterSuccessJob: (() -> Unit)? = null) {
+        if (serverDomain == null || activity == null) return
+        CoroutineScope(Dispatchers.Default).launch {
+            val result = MatrixChecker(activity.applicationContext).checkInstance(serverDomain!!)
+            CoroutineScope(Dispatchers.Main).launch {
+                domainCheckResult = result
+                if(domainCheckResult == MatrixChecker.CheckResult.NO_MATRIX_INSTANCE) activity.sendToastText("No matrix instance at this domain")
+                else if (domainCheckResult == MatrixChecker.CheckResult.UNREACHABLE) activity.sendToastText("Server not reachable")
+                else if (afterSuccessJob != null) afterSuccessJob()
+                else activity.sendToastText("Matrix server reachable")
+            }
+        }
+    }
+
     Screen({
         IconButton(onClick = {onBack()}, Modifier.align(Alignment.TopStart)) {
             Icon(
@@ -108,18 +126,25 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
             )
         }
 
-        Text("Matrix server", modifier = Modifier.align(Alignment.Center))
+        Text("Matrix server", modifier = Modifier.align(Alignment.Center), style = MaterialTheme.typography.titleLarge)
     },{
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
         ) {
             Section("Server settings") {
-                EditStringField(labelText = "Server domain",
-                    placeholderText = "server.domain",
-                    value = serverDomain ?: "",
-                    onValueChanged = {serverDomain = it.trim()},
-                    modifier = Modifier.fillMaxWidth())
+                Column {
+                    EditStringField(labelText = "Server domain",
+                        placeholderText = "server.domain",
+                        value = serverDomain ?: "",
+                        onValueChanged = {
+                            serverDomain = it.trim()
+                            domainCheckResult = null
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Button({ checkServerDomain() }, Modifier.fillMaxWidth()) { Text("Check", style = MaterialTheme.typography.labelLarge) }
+                }
             }
 
             Section("User account") {
@@ -133,12 +158,23 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
                     ) {
                         Icon(Icons.Default.Person, "Account icon", tint = MaterialTheme.colorScheme.onSecondary)
                     }
-                    Text(if (userName != null) "Logged in as " + userName else "Please login", modifier = Modifier.weight(1f))
+
+                    if (userName != null) {
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
+                            Text("Logged in as ", style = MaterialTheme.typography.bodyMedium)
+                            Text(userName!!, style = MaterialTheme.typography.labelLarge)
+                        }
+                    }
+                    else Text( "Please login", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelLarge)
                     Button({
-                        if(userName != null) logout()
-                        else shownPopup = ShownPopup.LOGIN
+                        if(userName != null) {
+                            logout()
+                            return@Button
+                        }
+                        if(domainCheckResult == null) checkServerDomain({shownPopup = ShownPopup.LOGIN})
+                        shownPopup = ShownPopup.LOGIN
                     }) {
-                        Text(if (userName != null) "Logout" else "Login")
+                        Text(if (userName != null) "Logout" else "Login", style = MaterialTheme.typography.labelLarge)
                     }
                 }
             }
@@ -146,7 +182,8 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
             Section("Room configuration") {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)) {
+                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
+                ) {
                     EditStringField(
                         labelText = "Room id",
                         placeholderText = "abcdefgh:server.domain",
@@ -158,13 +195,13 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
                         Button({
                             shownPopup = ShownPopup.ROOM_CREATOR
                         }, modifier = Modifier.weight(1f)) {
-                            Text("Create room")
+                            Text("Create room", style = MaterialTheme.typography.labelLarge)
                         }
 
                         Button({
                             shownPopup = ShownPopup.ROOM_SELECTOR
                         }, modifier = Modifier.weight(1f)) {
-                            Text("Select room")
+                            Text("Select room", style = MaterialTheme.typography.labelLarge)
                         }
                     }
                 }
@@ -189,9 +226,9 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
                             }
                         }
                     }, Modifier.fillMaxWidth()) {
-                        Text("Send test message")
+                        Text("Send test message", style = MaterialTheme.typography.labelLarge)
                     }
-                    Text("This will send a test message to the specified room.")
+                    Text("This will send a test message to the specified room.", Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
                 }
             }
 
@@ -200,8 +237,8 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
                 verticalAlignment = Alignment.Bottom,
                 modifier = Modifier.fillMaxHeight(1f)
             ) {
-                Button({onBack()}) { Text("Cancel") }
-                Button({save()}) { Text("Save") }
+                Button({onBack()}, Modifier.weight(1f)) { Text("Cancel", style = MaterialTheme.typography.labelLarge) }
+                Button({save()}, Modifier.weight(1f)) { Text("Save", style = MaterialTheme.typography.labelLarge) }
             }
         }
     })
@@ -312,7 +349,7 @@ fun LoginPopup(context: Context?, serverDomain: String, onClose: () -> Unit, onS
     }
 
     Popup(onDismissRequest = {onClose()}, header = {
-        Text("Login to " + serverDomain)
+        Text("Login to " + serverDomain, style = MaterialTheme.typography.titleMedium)
     }) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -326,7 +363,8 @@ fun LoginPopup(context: Context?, serverDomain: String, onClose: () -> Unit, onS
             if(loginStatus != null) {
                 Text (
                     loginStatus!!.text,
-                    color = statusColor
+                    color = statusColor,
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
 
@@ -347,13 +385,14 @@ fun LoginPopup(context: Context?, serverDomain: String, onClose: () -> Unit, onS
             )
 
             Text("Password will be never saved!",
-                color = Color.Gray
+                color = Color.Gray,
+                style = MaterialTheme.typography.bodyMedium
             )
 
             Row(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)) {
                 Button({
                     onClose()
-                },
+                }, Modifier.weight(1f),
                     enabled = loginStatus != LoginStatus.LOGGING_IN
                 ) {
                     Text("Cancel")
@@ -361,7 +400,7 @@ fun LoginPopup(context: Context?, serverDomain: String, onClose: () -> Unit, onS
 
                 Button({
                     login()
-                },
+                }, Modifier.weight(1f),
                     enabled = loginStatus != LoginStatus.LOGGING_IN
                 ) {
                     Text("Login")
@@ -422,7 +461,7 @@ fun RoomCreatorPopup(context: Context?, serverDomain: String, userName: String, 
     }
 
     Popup(onDismissRequest = { onClose() }, header = {
-        Text("Create private room / direct message")
+        Text("Create private room / direct message", style = MaterialTheme.typography.titleMedium)
     }) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -436,17 +475,18 @@ fun RoomCreatorPopup(context: Context?, serverDomain: String, userName: String, 
             if(createStatus != null) {
                 Text (
                     createStatus!!.text,
-                    color = statusColor
+                    color = statusColor,
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
-            Section {
+            Section(padding = MaterialTheme.spacing.xs) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)) {
-                    Box(modifier = Modifier.background(colorResource(R.color.accent_button), CircleShape).padding(MaterialTheme.spacing.sm)) {
+                    Box(modifier = Modifier.background(MaterialTheme.colorScheme.secondary, CircleShape).padding(MaterialTheme.spacing.sm)) {
                         Icon(Icons.Default.Person, "Account icon")
                     }
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Direct message")
-                        Text("Only the invited user can join")
+                        Text("Direct message", style = MaterialTheme.typography.labelLarge)
+                        Text("Only the invited user can join", style = MaterialTheme.typography.bodySmall)
                     }
                     Switch(directMessageRoom, {directMessageRoom = it}, colors = SwitchDefaults.colors(
                         uncheckedBorderColor = Color.Transparent,
@@ -473,11 +513,11 @@ fun RoomCreatorPopup(context: Context?, serverDomain: String, userName: String, 
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Text("Username is enough,\nif the user is on the same server")
+            Text("Username is enough,\nif the user is on the same server", Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
 
             Row(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.lg)) {
-                Button({onClose()}) { Text("Cancel") }
-                Button({create()}) { Text("Create") }
+                Button({onClose()}, Modifier.weight(1f)) { Text("Cancel", style = MaterialTheme.typography.labelLarge) }
+                Button({create()}, Modifier.weight(1f)) { Text("Create", style = MaterialTheme.typography.labelLarge) }
             }
         }
     }
@@ -497,7 +537,7 @@ fun RoomSelectorPopup(context: Context?, serverDomain: String, userName: String,
     var selectedRoom by rememberSaveable { mutableStateOf<Room?>(null) }
     var rooms by rememberSaveable { mutableStateOf(listOf<Room>()) }
 
-    var selectStatus by rememberSaveable { mutableStateOf<SelectStatus?>(SelectStatus.NEED_TO_SELECT_A_ROOM) }
+    var selectStatus by rememberSaveable { mutableStateOf<SelectStatus?>(null) }
 
     fun loadRooms() {
         if(context == null) return
@@ -555,8 +595,8 @@ fun RoomSelectorPopup(context: Context?, serverDomain: String, userName: String,
     Popup(onDismissRequest = { onClose() }, header = {
         Row(Modifier.fillMaxWidth()) {
             Column(Modifier.weight(1f)){
-                Text("Room selector")
-                Text ("Refreshing also accepts invites")
+                Text("Room selector", style = MaterialTheme.typography.titleMedium)
+                Text ("Refreshing also accepts invites", style = MaterialTheme.typography.bodyMedium)
             }
             IconButton({refresh()}, Modifier.align(Alignment.CenterVertically)) {
                 Icon(Icons.Filled.Refresh, "Refresh")
@@ -570,9 +610,10 @@ fun RoomSelectorPopup(context: Context?, serverDomain: String, userName: String,
             var statusColor = MaterialTheme.colorScheme.onPrimary
             if(selectStatus != null && selectStatus != SelectStatus.GETTING_DATA) statusColor = MaterialTheme.colorScheme.onError
             if(selectStatus != null) {
-                Text (
+                Text(
                     selectStatus!!.text,
-                    color = statusColor
+                    color = statusColor,
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
 
@@ -581,14 +622,14 @@ fun RoomSelectorPopup(context: Context?, serverDomain: String, userName: String,
                 LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs)) {
                     items(roomsList.size) { index ->
                         val room = roomsList[index]
-                        RoomSelectorEntry(room.displayName, room.membersAmount,selectedRoom == room, {selectedRoom = room})
+                        RoomSelectorEntry(room.displayName, room.membersAmount, room == selectedRoom, {selectedRoom = room})
                     }
                 }
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)) {
-                Button({onClose()}) { Text("Cancel") }
-                Button({select()}) { Text("Select") }
+                Button({onClose()}, Modifier.weight(1f)) { Text("Cancel", style = MaterialTheme.typography.labelLarge) }
+                Button({select()}, Modifier.weight(1f)) { Text("Select", style = MaterialTheme.typography.labelLarge) }
             }
         }
     }
@@ -602,10 +643,10 @@ fun RoomSelectorEntry(name: String, members: Int, selected: Boolean, onClick: ()
     ) {
         Row(Modifier.padding(MaterialTheme.spacing.md)) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(name)
-                Text("$members Members")
+                Text(name, style = MaterialTheme.typography.labelLarge)
+                Text("$members Members", style = MaterialTheme.typography.bodySmall)
             }
-            if(selected) Text("Selected", color = MaterialTheme.colorScheme.onSecondary)
+            if(selected) Text("Selected", color = MaterialTheme.colorScheme.onSecondary, style = MaterialTheme.typography.labelLarge)
         }
     }
 }
