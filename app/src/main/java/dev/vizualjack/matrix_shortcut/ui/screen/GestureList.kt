@@ -2,7 +2,9 @@ package dev.vizualjack.matrix_shortcut.ui.screen
 
 import android.content.Intent
 import android.provider.Settings
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,12 +15,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
@@ -45,9 +49,13 @@ import dev.vizualjack.matrix_shortcut.AppActivity
 import dev.vizualjack.matrix_shortcut.core.GestureDetectorService
 import dev.vizualjack.matrix_shortcut.core.isAccessibilityServiceEnabled
 import dev.vizualjack.matrix_shortcut.ui.components.Screen
+import dev.vizualjack.matrix_shortcut.ui.components.TextButton
 import dev.vizualjack.matrix_shortcut.ui.theme.AppTheme
 import dev.vizualjack.matrix_shortcut.ui.dashedBorder
+import dev.vizualjack.matrix_shortcut.ui.theme.colorScheme
+import dev.vizualjack.matrix_shortcut.ui.theme.iconSize
 import dev.vizualjack.matrix_shortcut.ui.theme.spacing
+import dev.vizualjack.matrix_shortcut.ui.theme.strokeWidth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,7 +76,9 @@ fun GestureList(activity:AppActivity?, gestures: List<Gesture>, newGesture:() ->
         },
         {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Column(Modifier.weight(1f).padding(0.dp, 0.dp, 0.dp, MaterialTheme.spacing.md)) {
+                Column(Modifier
+                    .weight(1f)
+                    .padding(0.dp, 0.dp, 0.dp, MaterialTheme.spacing.md)) {
                     LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)) {
                         items(gestures.size) {index ->
                             val gesture = gestures[index]
@@ -95,9 +105,17 @@ fun GestureList(activity:AppActivity?, gestures: List<Gesture>, newGesture:() ->
                         Box(Modifier
                             .width(MaterialTheme.spacing.sm)
                             .height(MaterialTheme.spacing.sm)
-                            .background(if(serviceEnabled) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error, CircleShape)
+                            .align(Alignment.CenterVertically)
+                            .background(
+                                if (serviceEnabled) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error,
+                                CircleShape
+                            )
                         )
-                        Text(if(serviceEnabled) "Service is active" else "Please activate the service", style = MaterialTheme.typography.labelLarge)
+                        Text(if(serviceEnabled) "Service is active" else "Please activate the service",
+                            color = if(serviceEnabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onBackground,
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                        if(!serviceEnabled) Icon(Icons.Default.ExitToApp, "goto settings", Modifier.size(MaterialTheme.iconSize.normal))
                     }
                 }
             }
@@ -124,25 +142,32 @@ fun GestureList(activity:AppActivity?, gestures: List<Gesture>, newGesture:() ->
 @Composable
 fun ListEntry(text: String, onClick: () -> Unit, addStyle: Boolean = false) {
     val backgroundColor = MaterialTheme.colorScheme.primaryContainer
+    val borderColor = MaterialTheme.colorScheme.primary
+    val borderStrokeWidth = MaterialTheme.strokeWidth.normal
     val roundedCornerShape = MaterialTheme.shapes.medium
     var modifier = Modifier
-                .height(75.dp)
-                .fillMaxWidth()
-                .clickable {
-                    onClick()
-                }
-    modifier = if(addStyle) modifier.dashedBorder(backgroundColor) else modifier.background(backgroundColor, roundedCornerShape)
+        .height(75.dp)
+        .fillMaxWidth()
+        .clickable {
+            onClick()
+        }
+    if(addStyle) modifier = modifier.dashedBorder(borderColor, borderStrokeWidth)
+    else {
+        modifier = modifier.background(backgroundColor, roundedCornerShape).border(BorderStroke(borderStrokeWidth, borderColor), roundedCornerShape)
+    }
     Box(modifier = modifier) {
-        Row(Modifier.padding(MaterialTheme.spacing.lg, MaterialTheme.spacing.xl).fillMaxSize(),
+        Row(Modifier
+            .padding(MaterialTheme.spacing.lg, MaterialTheme.spacing.xl)
+            .fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = if (addStyle) Arrangement.Center else Arrangement.spacedBy(MaterialTheme.spacing.md)
         ) {
             if(addStyle) {
-                Icon(Icons.Filled.AddCircle, contentDescription = "Add icon")
+                Icon(Icons.Filled.AddCircle, contentDescription = "Add icon", tint = MaterialTheme.colorScheme.onPrimary)
                 Spacer(Modifier.width(MaterialTheme.spacing.md))
             }
-            Text(text, if(!addStyle) Modifier.weight(1f) else Modifier, style = MaterialTheme.typography.titleMedium)
-            if(!addStyle) Icon(imageVector = Icons.Default.KeyboardArrowRight, contentDescription = "Arrow right")
+            Text(text, if(!addStyle) Modifier.weight(1f) else Modifier, style = MaterialTheme.typography.titleMedium, color = if(addStyle) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer)
+            if(!addStyle) Icon(imageVector = Icons.Default.KeyboardArrowRight, contentDescription = "Arrow right", tint = MaterialTheme.colorScheme.onPrimary)
         }
     }
 }
@@ -151,12 +176,15 @@ fun ListEntry(text: String, onClick: () -> Unit, addStyle: Boolean = false) {
 fun ImportExportPopup(onImport: () -> Unit, onExport: () -> Unit, onClose: () -> Unit) {
     Popup(onDismissRequest = { onClose() }, alignment = Alignment.BottomCenter) {
         Column(
-            modifier = Modifier.fillMaxWidth().height(200.dp).padding(MaterialTheme.spacing.md, MaterialTheme.spacing.xl),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .padding(MaterialTheme.spacing.md, MaterialTheme.spacing.xl),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
         ) {
-            Button({onImport()}, modifier = Modifier.fillMaxWidth()) { Text("Import configuration", style = MaterialTheme.typography.labelLarge) }
-            Button({onExport()}, modifier = Modifier.fillMaxWidth()) { Text("Export configuration", style = MaterialTheme.typography.labelLarge) }
+            TextButton("Import configuration", {onImport()}, Modifier.fillMaxWidth())
+            TextButton("Export configuration", {onExport()}, Modifier.fillMaxWidth())
         }
     }
 }

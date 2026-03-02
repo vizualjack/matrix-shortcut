@@ -49,11 +49,11 @@ fun EditStringField(
     }
 
     if (placeholderText != "") placeholder = @Composable {
-        Text(placeholderText, style = MaterialTheme.typography.bodyLarge)
+        Text(placeholderText, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSecondary)
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)) {
-        if (labelText != "") Text(labelText, style = MaterialTheme.typography.labelLarge)
+        if (labelText != "") Text(labelText, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSecondary)
 
         TextField(
             value = value,
@@ -74,8 +74,8 @@ fun EditStringField(
             keyboardOptions = KeyboardOptions(keyboardType = if(hidden) KeyboardType.Password else KeyboardType.Text),
             visualTransformation = if(hidden) PasswordVisualTransformation() else VisualTransformation.None,
             colors = TextFieldDefaults.textFieldColors(
-//                textColor = colorResource(R.color.text),
-//                focusedLabelColor = colorResource(R.color.text_accent),
+                textColor = MaterialTheme.colorScheme.onSurfaceVariant,
+//                focusedLabelColor = colorResource(R.colo#r.text_accent),
 //                unfocusedLabelColor = colorResource(R.color.text),
 //                disabledLabelColor = colorResource(R.color.text),
 //                errorLabelColor = colorResource(R.color.text),

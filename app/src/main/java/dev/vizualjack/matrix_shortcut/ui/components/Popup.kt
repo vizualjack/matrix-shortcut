@@ -1,6 +1,7 @@
 package dev.vizualjack.matrix_shortcut.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,13 +14,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Dialog
 import dev.vizualjack.matrix_shortcut.ui.theme.spacing
+import dev.vizualjack.matrix_shortcut.ui.theme.strokeWidth
 
 
 @Composable
 fun Popup(onDismissRequest: () -> Unit, alignment: Alignment = Alignment.Center, header: (@Composable () -> Unit)? = null, content: @Composable () -> Unit) {
     Dialog(onDismissRequest = { onDismissRequest() }) {
         Box(
-            Modifier.background(MaterialTheme.colorScheme.surface, MaterialTheme.shapes.medium),
+            Modifier
+                .background(MaterialTheme.colorScheme.background, MaterialTheme.shapes.medium)
+                .border(MaterialTheme.strokeWidth.normal, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.medium),
             alignment
         ) {
             Column(modifier = Modifier.padding(MaterialTheme.spacing.md), verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md), horizontalAlignment = Alignment.CenterHorizontally) {

@@ -26,7 +26,7 @@ fun EditNumberField(
 ) {
     var label: @Composable (() -> Unit)? = null
     if (text != null && text != "") label = @Composable {
-        Text(text, style = MaterialTheme.typography.labelLarge)
+        Text(text, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSecondary)
     }
 
     TextField(
@@ -37,7 +37,7 @@ fun EditNumberField(
         label = label,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         colors = TextFieldDefaults.textFieldColors(
-//            textColor = colorResource(R.color.text),
+            textColor = MaterialTheme.colorScheme.onSurfaceVariant,
 //            focusedLabelColor = colorResource(R.color.text_accent),
 //            unfocusedLabelColor = colorResource(R.color.text),
 //            disabledLabelColor = colorResource(R.color.text),

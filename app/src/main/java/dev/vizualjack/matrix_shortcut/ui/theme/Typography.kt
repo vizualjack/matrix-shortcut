@@ -12,5 +12,9 @@ import dev.vizualjack.matrix_shortcut.R
 val Typography = Typography(
     titleLarge = TextStyle(
         fontSize = 20.sp,
+    ),
+    labelLarge = TextStyle(
+        fontSize = 15.sp,
+        fontWeight = FontWeight.Bold
     )
 )

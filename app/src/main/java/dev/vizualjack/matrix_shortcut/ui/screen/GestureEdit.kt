@@ -34,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -44,6 +45,7 @@ import dev.vizualjack.matrix_shortcut.ui.components.Dropdown
 import dev.vizualjack.matrix_shortcut.ui.components.EditNumberField
 import dev.vizualjack.matrix_shortcut.ui.components.EditStringField
 import dev.vizualjack.matrix_shortcut.ui.components.Screen
+import dev.vizualjack.matrix_shortcut.ui.components.TextButton
 import dev.vizualjack.matrix_shortcut.ui.theme.AppTheme
 import dev.vizualjack.matrix_shortcut.ui.dashedBorder
 import dev.vizualjack.matrix_shortcut.ui.theme.spacing
@@ -102,6 +104,8 @@ fun GestureEdit(editGesture: Gesture?, onSave: (gesture: Gesture) -> Unit, onBac
                 modifier = Modifier.fillMaxWidth()
             )
 
+            Spacer(Modifier)
+
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Keystrokes", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
 
@@ -109,7 +113,7 @@ fun GestureEdit(editGesture: Gesture?, onSave: (gesture: Gesture) -> Unit, onBac
                     .background(MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.shapes.extraLarge)
                     .padding(MaterialTheme.spacing.sm, MaterialTheme.spacing.xs)
                 ) {
-                    Text(gestureEntries.size.toString() + " STEPS", style = MaterialTheme.typography.labelLarge)
+                    Text(gestureEntries.size.toString() + " STEPS", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSecondaryContainer)
                 }
             }
 
@@ -132,12 +136,14 @@ fun GestureEdit(editGesture: Gesture?, onSave: (gesture: Gesture) -> Unit, onBac
                 })
             }
 
-            Column(
-                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                if(editGesture != null) Button({delete()}, Modifier.fillMaxWidth()) { Text("Delete shortcut") }
-                Button({save()}, Modifier.fillMaxWidth()) { Text("Save shortcut") }
+            Row(Modifier.height(120.dp), verticalAlignment = Alignment.Bottom) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    if(editGesture != null) TextButton("Delete shortcut", {delete()}, Modifier.fillMaxWidth().border(MaterialTheme.strokeWidth.normal, MaterialTheme.colorScheme.errorContainer, MaterialTheme.shapes.medium), customColor = Color.Transparent, textColor = MaterialTheme.colorScheme.error)
+                    TextButton("Save shortcut", {save()}, Modifier.fillMaxWidth(), highlight = true)
+                }
             }
         }
     })
@@ -198,9 +204,9 @@ fun NewGestureEntry(text: String, onClick: () -> Unit) {
 
     Box(modifier.fillMaxWidth().clickable { onClick() }) {
         Row(modifier = Modifier.padding(MaterialTheme.spacing.lg).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-            Icon(Icons.Filled.AddCircle, "Add icon")
+            Icon(Icons.Filled.AddCircle, "Add icon", tint = MaterialTheme.colorScheme.onPrimary)
             Spacer(Modifier.width(MaterialTheme.spacing.md))
-            Text(text, style = MaterialTheme.typography.labelLarge)
+            Text(text, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimary)
         }
     }
 }
