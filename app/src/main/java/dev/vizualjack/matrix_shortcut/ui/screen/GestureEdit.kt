@@ -166,7 +166,7 @@ fun GestureEditEntry(gestureElement: GestureEntry, deleteGestureElement:() -> Un
     if(gestureElement.keyCode == KeyCode.VOLUME_DOWN.value) keyCodeValue = KeyCode.VOLUME_DOWN
 
     var keyCode by remember { mutableStateOf(keyCodeValue) }
-    var minDuration by remember { mutableStateOf(gestureElement.minDuration) }
+    var minDuration by remember { mutableStateOf<Int?>(gestureElement.minDuration) }
 
     Box(Modifier
         .border(MaterialTheme.strokeWidth.normal, color = MaterialTheme.colorScheme.primary, MaterialTheme.shapes.medium)
@@ -189,7 +189,7 @@ fun GestureEditEntry(gestureElement: GestureEntry, deleteGestureElement:() -> Un
                 value = minDuration,
                 onValueChanged = {
                     minDuration = it
-                    gestureElement.minDuration = minDuration
+                    if(minDuration != null) gestureElement.minDuration = minDuration!!
                 },
                 modifier = Modifier.width(100.dp),
                 textAlign = TextAlign.Right,

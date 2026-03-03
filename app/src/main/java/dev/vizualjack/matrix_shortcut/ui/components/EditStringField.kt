@@ -4,10 +4,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.LocalTextSelectionColors
-import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -24,12 +22,10 @@ import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalAutofill
 import androidx.compose.ui.platform.LocalAutofillTree
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.unit.dp
-import dev.vizualjack.matrix_shortcut.R
+import dev.vizualjack.matrix_shortcut.ui.theme.textSelectionColors
 import dev.vizualjack.matrix_shortcut.ui.theme.spacing
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
@@ -58,13 +54,10 @@ fun EditStringField(
     Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)) {
         if (labelText != "") Text(labelText, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSecondary)
 
-        val customTextSelectionColors = TextSelectionColors(
-            handleColor = MaterialTheme.colorScheme.onSecondary,
-            backgroundColor = Color.Transparent,
-        )
+
 
         CompositionLocalProvider(
-            LocalTextSelectionColors provides customTextSelectionColors
+            LocalTextSelectionColors provides textSelectionColors
         ) {
             TextField(
                 value = value,
@@ -84,7 +77,7 @@ fun EditStringField(
                 keyboardOptions = KeyboardOptions(keyboardType = if (hidden) KeyboardType.Password else KeyboardType.Text),
                 visualTransformation = if (hidden) PasswordVisualTransformation() else VisualTransformation.None,
                 colors = TextFieldDefaults.textFieldColors(
-                    textColor = MaterialTheme.colorScheme.onBackground,
+                    textColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     disabledIndicatorColor = Color.Transparent,
                     focusedIndicatorColor = Color.Transparent,
                     errorIndicatorColor = Color.Transparent,

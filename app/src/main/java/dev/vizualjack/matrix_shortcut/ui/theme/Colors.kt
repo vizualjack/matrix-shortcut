@@ -1,7 +1,9 @@
 package dev.vizualjack.matrix_shortcut.ui.theme
 
+import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
 
 val TEXT_COLOR = Color(241,245,249)
 
@@ -23,4 +25,9 @@ val colorScheme = darkColorScheme(
     surface = Color(30,41,59),
     surfaceTint = Color(19,109,236),
     onBackground = TEXT_COLOR,
+)
+
+val textSelectionColors = TextSelectionColors(
+    handleColor = colorScheme.onSecondary,
+    backgroundColor = colorScheme.onPrimary,
 )
