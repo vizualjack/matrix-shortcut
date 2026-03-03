@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -75,28 +76,23 @@ fun <T> Dropdown(
                 Icon(Icons.Default.KeyboardArrowDown, "Open dropdown", tint = colorResource(R.color.text))
             }
 
-            if(expanded) {
-                Surface({expanded = false}) {
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = {expanded = false}
+                ) {
                     Column {
                         values.forEach {
-                            Box(Modifier.padding(MaterialTheme.spacing.lg).clickable {
-                                onChange(it)
-                                expanded = false
-                            }) {
-                                Text(it.toString(), style = MaterialTheme.typography.labelLarge)
-                            }
-//                    DropdownMenuItem(
-//                        text = {  },
-//                        onClick = {
-//                        },
-//                        modifier = Modifier.background(Color.Transparent),
-//                    )
+                            DropdownMenuItem(
+                                text = { Text(it.toString(), style = MaterialTheme.typography.labelLarge) },
+                                onClick = {
+                                    onChange(it)
+                                    expanded = false
+                                }
+                            )
                         }
                     }
                 }
-            }
         }
-//    }
 }
 
 

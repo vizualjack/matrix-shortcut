@@ -15,6 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.unit.Dp
@@ -28,11 +29,15 @@ import dev.vizualjack.matrix_shortcut.ui.theme.strokeWidth
 fun TextButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, highlight: Boolean = false, enabled: Boolean = true, customColor: Color? = null, textColor: Color = MaterialTheme.colorScheme.onSurface) {
     var color = if(highlight) MaterialTheme.colorScheme.surfaceTint else MaterialTheme.colorScheme.surface
     if(customColor != null) color = customColor
+
+    var buttonModifier = modifier
+    if(!enabled) buttonModifier  = modifier.alpha(0.5f)
+
     Button(
         { onClick() },
-        modifier.height(50.dp),
+        buttonModifier.height(50.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = color
+            containerColor = color,
         ),
         enabled = enabled,
         shape = MaterialTheme.shapes.medium

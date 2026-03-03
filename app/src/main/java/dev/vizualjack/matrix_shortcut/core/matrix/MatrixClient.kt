@@ -266,7 +266,9 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
     }
 
     fun logout(): SimpleResult {
-        return checkResponse(logoutRequest())
+        val response = checkResponse(logoutRequest())
+        if(response.error == Error.UNAUTHORIZED) return SimpleResult(true)
+        return response
     }
 
     private fun refreshAccessToken(): SimpleResult {

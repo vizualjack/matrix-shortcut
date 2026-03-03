@@ -141,7 +141,16 @@ fun GestureEdit(editGesture: Gesture?, onSave: (gesture: Gesture) -> Unit, onBac
                     verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    if(editGesture != null) TextButton("Delete shortcut", {delete()}, Modifier.fillMaxWidth().border(MaterialTheme.strokeWidth.normal, MaterialTheme.colorScheme.errorContainer, MaterialTheme.shapes.medium), customColor = Color.Transparent, textColor = MaterialTheme.colorScheme.error)
+                    if(editGesture != null) {
+                        TextButton("Delete shortcut",
+                            {delete()},
+                            Modifier
+                                .fillMaxWidth()
+                                .border(MaterialTheme.strokeWidth.normal, MaterialTheme.colorScheme.errorContainer, MaterialTheme.shapes.medium),
+                            customColor = Color.Transparent,
+                            textColor = MaterialTheme.colorScheme.error
+                        )
+                    }
                     TextButton("Save shortcut", {save()}, Modifier.fillMaxWidth(), highlight = true)
                 }
             }

@@ -21,9 +21,9 @@ import dev.vizualjack.matrix_shortcut.ui.theme.strokeWidth
 
 
 @Composable
-fun Section(header: String? = null, padding: Dp = MaterialTheme.spacing.md, content: @Composable () -> Unit) {
+fun Section(header: String? = null, padding: Dp = MaterialTheme.spacing.md, modifier: Modifier = Modifier,content: @Composable () -> Unit) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.shapes.medium)
             .border(MaterialTheme.strokeWidth.normal, color = MaterialTheme.colorScheme.primary, MaterialTheme.shapes.medium)

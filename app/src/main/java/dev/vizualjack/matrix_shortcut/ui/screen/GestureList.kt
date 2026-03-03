@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -42,12 +43,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Popup
 import androidx.core.content.ContextCompat.startActivity
 import dev.vizualjack.matrix_shortcut.core.data.Gesture
 import dev.vizualjack.matrix_shortcut.AppActivity
 import dev.vizualjack.matrix_shortcut.core.GestureDetectorService
 import dev.vizualjack.matrix_shortcut.core.isAccessibilityServiceEnabled
+import dev.vizualjack.matrix_shortcut.ui.components.Popup
 import dev.vizualjack.matrix_shortcut.ui.components.Screen
 import dev.vizualjack.matrix_shortcut.ui.components.TextButton
 import dev.vizualjack.matrix_shortcut.ui.theme.AppTheme
@@ -57,7 +58,7 @@ import dev.vizualjack.matrix_shortcut.ui.theme.iconSize
 import dev.vizualjack.matrix_shortcut.ui.theme.spacing
 import dev.vizualjack.matrix_shortcut.ui.theme.strokeWidth
 
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 fun GestureList(activity:AppActivity?, gestures: List<Gesture>, newGesture:() -> Unit, openGesture:(Gesture) -> Unit, onSettingsClick:() -> Unit) {
     var expanded by remember { mutableStateOf(false) }
@@ -174,12 +175,15 @@ fun ListEntry(text: String, onClick: () -> Unit, addStyle: Boolean = false) {
 
 @Composable
 fun ImportExportPopup(onImport: () -> Unit, onExport: () -> Unit, onClose: () -> Unit) {
-    Popup(onDismissRequest = { onClose() }, alignment = Alignment.BottomCenter) {
+    val extraSize = MaterialTheme.spacing.md * 2
+    Popup(onDismissRequest = { onClose() },
+        alignment = Alignment.BottomCenter,
+        modifier = Modifier.offset(0.dp, extraSize),
+        header = {
+            Text("Import / Export configuration", style = MaterialTheme.typography.titleMedium)
+        }) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-                .padding(MaterialTheme.spacing.md, MaterialTheme.spacing.xl),
+            Modifier.padding(0.dp,0.dp, 0.dp, extraSize),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
         ) {

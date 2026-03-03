@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -94,7 +95,7 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
     fun logout() {
         CoroutineScope(Dispatchers.Default).launch {
             if(activity == null) return@launch
-            val matrixClient = MatrixClient(activity.applicationContext, serverDomain!!, userName!!, accessToken!!, refreshToken!!)
+            val matrixClient = MatrixClient(activity.applicationContext, serverDomain!!, userName!!, accessToken!!, refreshToken)
             val result = matrixClient.logout()
             if(!result.success) return@launch
             CoroutineScope(Dispatchers.Main).launch {
@@ -106,7 +107,10 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
     }
 
     fun checkServerDomain(afterSuccessJob: (() -> Unit)? = null) {
-        if (serverDomain == null || activity == null) return
+        if (serverDomain == null || activity == null) {
+            if(activity != null && afterSuccessJob != null) activity.sendToastText("Please provide a server domain!")
+            return
+        }
         CoroutineScope(Dispatchers.Default).launch {
             val result = MatrixChecker(activity.applicationContext).checkInstance(serverDomain!!)
             CoroutineScope(Dispatchers.Main).launch {
@@ -324,7 +328,7 @@ fun LoginPopup(context: Context?, serverDomain: String, onClose: () -> Unit, onS
                 } else loginStatus = LoginStatus.SUCCESS
             }
             if(!result.success) return@launch
-            Thread.sleep(2000)
+            Thread.sleep(500)
             CoroutineScope(Dispatchers.Main).launch {
                 onSuccessLogin(LoginData(
                     userName,
@@ -343,7 +347,7 @@ fun LoginPopup(context: Context?, serverDomain: String, onClose: () -> Unit, onS
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
         ) {
-            var statusColor = Color.White
+            var statusColor = MaterialTheme.colorScheme.onBackground
             if(loginStatus != null) {
                 if (loginStatus!! == LoginStatus.SUCCESS) statusColor = MaterialTheme.colorScheme.tertiary
                 else if (loginStatus!! != LoginStatus.LOGGING_IN) statusColor = MaterialTheme.colorScheme.error
@@ -378,8 +382,8 @@ fun LoginPopup(context: Context?, serverDomain: String, onClose: () -> Unit, onS
             )
 
             Row(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)) {
-                TextButton("Cancel", { onClose() }, Modifier.weight(1f), enabled = loginStatus != LoginStatus.LOGGING_IN)
-                TextButton("Login", { login() }, Modifier.weight(1f), true, enabled = loginStatus != LoginStatus.LOGGING_IN)
+                TextButton("Cancel", { onClose() }, Modifier.weight(1f), enabled = !(loginStatus in arrayOf(LoginStatus.LOGGING_IN, LoginStatus.SUCCESS)))
+                TextButton("Login", { login() }, Modifier.weight(1f), true, enabled = !(loginStatus in arrayOf(LoginStatus.LOGGING_IN, LoginStatus.SUCCESS)))
             }
         }
     }
@@ -454,7 +458,7 @@ fun RoomCreatorPopup(context: Context?, serverDomain: String, userName: String, 
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
-            Section(padding = MaterialTheme.spacing.xs) {
+            Section(padding = MaterialTheme.spacing.xs, modifier = Modifier.clickable { directMessageRoom = !directMessageRoom }) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)) {
                     Box(modifier = Modifier.background(MaterialTheme.colorScheme.secondaryContainer, CircleShape).padding(MaterialTheme.spacing.sm)) {
                         Icon(Icons.Default.Person, "Account icon", tint = MaterialTheme.colorScheme.onSecondaryContainer)
@@ -584,8 +588,8 @@ fun RoomSelectorPopup(context: Context?, serverDomain: String, userName: String,
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
         ) {
-            var statusColor = MaterialTheme.colorScheme.onPrimary
-            if(selectStatus != null && selectStatus != SelectStatus.GETTING_DATA) statusColor = MaterialTheme.colorScheme.onError
+            var statusColor = MaterialTheme.colorScheme.onBackground
+            if(selectStatus != null && selectStatus != SelectStatus.GETTING_DATA) statusColor = MaterialTheme.colorScheme.error
             if(selectStatus != null) {
                 Text(
                     selectStatus!!.text,
