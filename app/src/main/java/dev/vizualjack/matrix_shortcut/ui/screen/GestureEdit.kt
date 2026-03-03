@@ -57,7 +57,7 @@ import dev.vizualjack.matrix_shortcut.ui.theme.strokeWidth
 fun GestureEdit(editGesture: Gesture?, onSave: (gesture: Gesture) -> Unit, onBack: () -> Unit, onDelete: () -> Unit) {
     var name by remember { mutableStateOf(if(editGesture != null) editGesture.name else "") }
     var message by remember { mutableStateOf(if(editGesture != null) editGesture.message else "") }
-    var gestureEntries by remember { mutableStateOf(if(editGesture != null) editGesture.gestureEntries else arrayListOf()) }
+    var gestureEntries by remember { mutableStateOf(if(editGesture != null) editGesture.gestureEntries.toMutableList() else arrayListOf()) }
 
     fun delete() {
         onDelete()
@@ -69,7 +69,7 @@ fun GestureEdit(editGesture: Gesture?, onSave: (gesture: Gesture) -> Unit, onBac
         if (editGesture != null) gesture = editGesture
         gesture.name = name
         gesture.message = message
-        gesture.gestureEntries = gestureEntries
+        gesture.gestureEntries = ArrayList(gestureEntries)
         onSave(gesture)
         onBack()
     }
@@ -113,7 +113,7 @@ fun GestureEdit(editGesture: Gesture?, onSave: (gesture: Gesture) -> Unit, onBac
                     .background(MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.shapes.extraLarge)
                     .padding(MaterialTheme.spacing.sm, MaterialTheme.spacing.xs)
                 ) {
-                    Text(gestureEntries.size.toString() + " STEPS", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                    Text(gestureEntries.size.toString() + (if (gestureEntries.size == 1) " STEP" else " STEPS"), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSecondaryContainer)
                 }
             }
 

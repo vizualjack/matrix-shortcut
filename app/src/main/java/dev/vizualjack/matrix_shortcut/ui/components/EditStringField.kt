@@ -3,6 +3,8 @@ package dev.vizualjack.matrix_shortcut.ui.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.selection.LocalTextSelectionColors
+import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ShapeDefaults
@@ -10,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -55,39 +58,42 @@ fun EditStringField(
     Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)) {
         if (labelText != "") Text(labelText, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSecondary)
 
-        TextField(
-            value = value,
-            singleLine = true,
-            modifier = modifier
-                .onFocusChanged {
-                    if (autofill == null || autofillNode == null) return@onFocusChanged
-                    if (it.isFocused) autofill.requestAutofillForNode(autofillNode)
-                    else autofill.cancelAutofillForNode(autofillNode)
-                }
-                .onGloballyPositioned {
-                    if (autofillNode == null) return@onGloballyPositioned
-                    autofillNode.boundingBox = it.boundsInWindow()
-                },
-            onValueChange = { onValueChanged(it) },
-            placeholder = placeholder,
-//        label = label,
-            keyboardOptions = KeyboardOptions(keyboardType = if(hidden) KeyboardType.Password else KeyboardType.Text),
-            visualTransformation = if(hidden) PasswordVisualTransformation() else VisualTransformation.None,
-            colors = TextFieldDefaults.textFieldColors(
-                textColor = MaterialTheme.colorScheme.onSurfaceVariant,
-//                focusedLabelColor = colorResource(R.colo#r.text_accent),
-//                unfocusedLabelColor = colorResource(R.color.text),
-//                disabledLabelColor = colorResource(R.color.text),
-//                errorLabelColor = colorResource(R.color.text),
-//                containerColor = colorResource(R.color.text_input),
-                disabledIndicatorColor = Color.Transparent,
-                focusedIndicatorColor = Color.Transparent,
-                errorIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-            ),
-            shape = ShapeDefaults.Small,
-            textStyle = MaterialTheme.typography.bodyLarge
+        val customTextSelectionColors = TextSelectionColors(
+            handleColor = MaterialTheme.colorScheme.onSecondary,
+            backgroundColor = Color.Transparent,
         )
+
+        CompositionLocalProvider(
+            LocalTextSelectionColors provides customTextSelectionColors
+        ) {
+            TextField(
+                value = value,
+                singleLine = true,
+                modifier = modifier
+                    .onFocusChanged {
+                        if (autofill == null || autofillNode == null) return@onFocusChanged
+                        if (it.isFocused) autofill.requestAutofillForNode(autofillNode)
+                        else autofill.cancelAutofillForNode(autofillNode)
+                    }
+                    .onGloballyPositioned {
+                        if (autofillNode == null) return@onGloballyPositioned
+                        autofillNode.boundingBox = it.boundsInWindow()
+                    },
+                onValueChange = { onValueChanged(it) },
+                placeholder = placeholder,
+                keyboardOptions = KeyboardOptions(keyboardType = if (hidden) KeyboardType.Password else KeyboardType.Text),
+                visualTransformation = if (hidden) PasswordVisualTransformation() else VisualTransformation.None,
+                colors = TextFieldDefaults.textFieldColors(
+                    textColor = MaterialTheme.colorScheme.onBackground,
+                    disabledIndicatorColor = Color.Transparent,
+                    focusedIndicatorColor = Color.Transparent,
+                    errorIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    cursorColor = MaterialTheme.colorScheme.onSecondary,
+                ),
+                shape = MaterialTheme.shapes.medium,
+                textStyle = MaterialTheme.typography.bodyLarge,
+            )
+        }
     }
 }
-

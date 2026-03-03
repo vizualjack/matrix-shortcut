@@ -4,6 +4,7 @@ import android.view.KeyEvent
 import android.view.Surface
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -68,12 +69,12 @@ fun <T> Dropdown(
                 .background(if(transparentBackground) Color.Transparent else MaterialTheme.colorScheme.primary, MaterialTheme.shapes.large)
                 .padding(MaterialTheme.spacing.xs, 0.dp),
         ) {
-            Row(modifier.clickable { expanded = !expanded },
+            Row(modifier.clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) { expanded = !expanded },
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(value.toString(), style = MaterialTheme.typography.labelLarge)
-                Icon(Icons.Default.KeyboardArrowDown, "Open dropdown", tint = colorResource(R.color.text))
+                Icon(Icons.Default.KeyboardArrowDown, "Open dropdown")
             }
 
                 DropdownMenu(

@@ -34,13 +34,12 @@ fun Popup(onDismissRequest: () -> Unit, alignment: Alignment = Alignment.Center,
     Box(
         Modifier.background(Color(0,0,0,0x7F))
             .fillMaxSize()
-            .clickable { onDismissRequest() },
+            .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) { onDismissRequest() },
         contentAlignment = alignment
     ) {
         Box(Modifier
             .padding(MaterialTheme.spacing.md)
-            .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }
-            ) {}
+            .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) {}
         ) {
             Box(
                 modifier

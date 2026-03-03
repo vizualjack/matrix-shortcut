@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -431,7 +432,7 @@ fun RoomCreatorPopup(context: Context?, serverDomain: String, userName: String, 
                     else createStatus = CreateStatus.UNKNOWN
                 } else createStatus = CreateStatus.SUCCESS
             }
-            Thread.sleep(2000)
+            Thread.sleep(500)
             withContext(Dispatchers.Main) {
                 onRoomCreated(result.value!!)
                 onClose()
@@ -458,7 +459,7 @@ fun RoomCreatorPopup(context: Context?, serverDomain: String, userName: String, 
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
-            Section(padding = MaterialTheme.spacing.xs, modifier = Modifier.clickable { directMessageRoom = !directMessageRoom }) {
+            Section(padding = MaterialTheme.spacing.xs, modifier = Modifier.clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) { directMessageRoom = !directMessageRoom }) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)) {
                     Box(modifier = Modifier.background(MaterialTheme.colorScheme.secondaryContainer, CircleShape).padding(MaterialTheme.spacing.sm)) {
                         Icon(Icons.Default.Person, "Account icon", tint = MaterialTheme.colorScheme.onSecondaryContainer)
@@ -625,7 +626,7 @@ fun RoomSelectorEntry(name: String, members: Int, selected: Boolean, onClick: ()
         Row(Modifier.padding(MaterialTheme.spacing.md)) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(name, style = MaterialTheme.typography.labelLarge)
-                Text("$members Members", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondary)
+                Text(members.toString() + (if (members == 1) " Member" else " Members"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondary)
             }
             if(selected) Text("Selected", color = MaterialTheme.colorScheme.onSecondary, style = MaterialTheme.typography.labelLarge)
         }

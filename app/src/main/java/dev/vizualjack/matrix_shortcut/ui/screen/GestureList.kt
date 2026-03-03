@@ -34,6 +34,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -59,6 +60,7 @@ import dev.vizualjack.matrix_shortcut.ui.theme.spacing
 import dev.vizualjack.matrix_shortcut.ui.theme.strokeWidth
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GestureList(activity:AppActivity?, gestures: List<Gesture>, newGesture:() -> Unit, openGesture:(Gesture) -> Unit, onSettingsClick:() -> Unit) {
     var expanded by remember { mutableStateOf(false) }
@@ -175,13 +177,11 @@ fun ListEntry(text: String, onClick: () -> Unit, addStyle: Boolean = false) {
 
 @Composable
 fun ImportExportPopup(onImport: () -> Unit, onExport: () -> Unit, onClose: () -> Unit) {
-    val extraSize = MaterialTheme.spacing.md * 2
+    val extraSize = MaterialTheme.spacing.xl
     Popup(onDismissRequest = { onClose() },
         alignment = Alignment.BottomCenter,
-        modifier = Modifier.offset(0.dp, extraSize),
-        header = {
-            Text("Import / Export configuration", style = MaterialTheme.typography.titleMedium)
-        }) {
+        modifier = Modifier.offset(0.dp, extraSize / 2)
+    ) {
         Column(
             Modifier.padding(0.dp,0.dp, 0.dp, extraSize),
             horizontalAlignment = Alignment.CenterHorizontally,
