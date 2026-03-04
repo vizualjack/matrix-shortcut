@@ -28,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -57,7 +58,15 @@ import dev.vizualjack.matrix_shortcut.ui.theme.strokeWidth
 fun GestureEdit(editGesture: Gesture?, onSave: (gesture: Gesture) -> Unit, onBack: () -> Unit, onDelete: () -> Unit) {
     var name by remember { mutableStateOf(if(editGesture != null) editGesture.name else "") }
     var message by remember { mutableStateOf(if(editGesture != null) editGesture.message else "") }
-    var gestureEntries by remember { mutableStateOf(if(editGesture != null) editGesture.gestureEntries.toMutableList() else arrayListOf()) }
+    var gestureEntries by remember {
+        val entries = arrayListOf<GestureEntry>()
+        if(editGesture != null) {
+            for(entry in editGesture.gestureEntries) {
+                entries.add(GestureEntry(entry.keyCode, entry.minDuration))
+            }
+        }
+        mutableStateOf(entries.toMutableList())
+    }
 
     fun delete() {
         onDelete()
