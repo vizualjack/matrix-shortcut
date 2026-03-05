@@ -79,7 +79,8 @@ fun <T> Dropdown(
 
                 DropdownMenu(
                     expanded = expanded,
-                    onDismissRequest = {expanded = false}
+                    onDismissRequest = {expanded = false},
+                    modifier = Modifier.background(MaterialTheme.colorScheme.primary)
                 ) {
                     Column {
                         values.forEach {
