@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import dev.vizualjack.matrix_shortcut.core.GestureDetectorService
 import dev.vizualjack.matrix_shortcut.core.data.Storage
@@ -19,11 +20,13 @@ import dev.vizualjack.matrix_shortcut.ui.AppUI
 import dev.vizualjack.matrix_shortcut.ui.theme.AppTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 import java.lang.Exception
+import java.lang.Thread.sleep
 
 
 class AppActivity : ComponentActivity() {
@@ -104,12 +107,14 @@ class AppActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        setCustomSplashScreen()
         super.onCreate(savedInstanceState)
         serviceEnabledCurrentStatus = isAccessibilityServiceEnabled(applicationContext, GestureDetectorService::class.java)
         window.statusBarColor = Color.TRANSPARENT
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContentToAppUI()
         CoroutineScope(Dispatchers.IO).launch {
+            delay(3000)
             loadData()
             withContext(Dispatchers.Main) {
                 refreshContent()
@@ -148,5 +153,14 @@ class AppActivity : ComponentActivity() {
     private fun saveData() {
         if(storageData == null) return
         Storage(applicationContext).saveData(storageData!!)
+    }
+
+    private fun setCustomSplashScreen() {
+        val splash = installSplashScreen()
+        splash.setOnExitAnimationListener { provider ->
+            provider.view.post {
+                provider.remove()
+            }
+        }
     }
 }

@@ -52,7 +52,7 @@ fun AppUI(
         if(activity.storageData!!.matrixConfig != null) matrixConfig = activity.storageData!!.matrixConfig!!
     }
 
-    val startLocation: String
+    val startLocation: String// = Location.Loading.name
     if(activity.loadingStatus == AppActivity.LoadingStatus.LOADING) startLocation = Location.Loading.name
     else if(activity.loadingStatus == AppActivity.LoadingStatus.ERROR) startLocation = Location.LoadError.name
     else {

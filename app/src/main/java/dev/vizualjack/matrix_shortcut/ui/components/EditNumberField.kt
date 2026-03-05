@@ -43,9 +43,15 @@ fun EditNumberField(
             onValueChange = { onValueChanged(it.toIntOrNull()) },
             label = label,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            colors = TextFieldDefaults.textFieldColors(
-                textColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                containerColor = if(transparentBackground) Color.Transparent else Color.Unspecified,
+            colors = TextFieldDefaults.colors(
+                focusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                errorTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                focusedContainerColor = if(transparentBackground) Color.Transparent else Color.Unspecified,
+                disabledContainerColor = if(transparentBackground) Color.Transparent else Color.Unspecified,
+                errorContainerColor = if(transparentBackground) Color.Transparent else Color.Unspecified,
+                unfocusedContainerColor = if(transparentBackground) Color.Transparent else Color.Unspecified,
                 disabledIndicatorColor = Color.Transparent,
                 focusedIndicatorColor = Color.Transparent,
                 errorIndicatorColor = Color.Transparent,
