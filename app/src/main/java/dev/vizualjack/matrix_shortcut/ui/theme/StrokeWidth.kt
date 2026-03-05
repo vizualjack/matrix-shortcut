@@ -4,5 +4,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 data class StrokeWidth (
-    val normal: Dp = 1.dp
+    val normal: Dp = 1.dp,
+    val thicker: Dp = 2.dp
 )

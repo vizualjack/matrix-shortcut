@@ -145,21 +145,25 @@ fun GestureEdit(editGesture: Gesture?, onSave: (gesture: Gesture) -> Unit, onBac
                 })
             }
 
-            Row(Modifier.height(120.dp), verticalAlignment = Alignment.Bottom) {
+            Row(Modifier.height(130.dp), verticalAlignment = Alignment.Bottom) {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     if(editGesture != null) {
-                        TextButton("Delete shortcut",
-                            {delete()},
-                            Modifier
-                                .fillMaxWidth()
-                                .border(MaterialTheme.strokeWidth.normal, MaterialTheme.colorScheme.errorContainer, MaterialTheme.shapes.medium),
-                            customColor = Color.Transparent,
-                            textColor = MaterialTheme.colorScheme.error
-                        )
+
                     }
+                    TextButton("Delete shortcut",
+                        {delete()},
+                        enabled = editGesture != null,
+                        modifier = Modifier
+                                    .fillMaxWidth()
+                                    .border(MaterialTheme.strokeWidth.normal,
+                                        if(editGesture != null) MaterialTheme.colorScheme.errorContainer else Color.Transparent,
+                                        MaterialTheme.shapes.medium),
+                        customColor = Color.Transparent,
+                        customTextColor = MaterialTheme.colorScheme.error
+                    )
                     TextButton("Save shortcut", {save()}, Modifier.fillMaxWidth(), highlight = true)
                 }
             }
@@ -218,7 +222,7 @@ fun GestureEditEntry(gestureElement: GestureEntry, deleteGestureElement:() -> Un
 
 @Composable
 fun NewGestureEntry(text: String, onClick: () -> Unit) {
-    val modifier = Modifier.dashedBorder(MaterialTheme.colorScheme.primary, MaterialTheme.strokeWidth.normal)
+    val modifier = Modifier.dashedBorder(MaterialTheme.colorScheme.primary, MaterialTheme.strokeWidth.thicker)
 
     Box(modifier.fillMaxWidth().clickable { onClick() }) {
         Row(modifier = Modifier.padding(MaterialTheme.spacing.lg).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {

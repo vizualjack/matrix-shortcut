@@ -146,7 +146,6 @@ fun GestureList(activity:AppActivity?, gestures: List<Gesture>, newGesture:() ->
 fun ListEntry(text: String, onClick: () -> Unit, addStyle: Boolean = false) {
     val backgroundColor = MaterialTheme.colorScheme.primaryContainer
     val borderColor = MaterialTheme.colorScheme.primary
-    val borderStrokeWidth = MaterialTheme.strokeWidth.normal
     val roundedCornerShape = MaterialTheme.shapes.medium
     var modifier = Modifier
         .height(75.dp)
@@ -154,9 +153,9 @@ fun ListEntry(text: String, onClick: () -> Unit, addStyle: Boolean = false) {
         .clickable {
             onClick()
         }
-    if(addStyle) modifier = modifier.dashedBorder(borderColor, borderStrokeWidth)
+    if(addStyle) modifier = modifier.dashedBorder(borderColor, MaterialTheme.strokeWidth.thicker)
     else {
-        modifier = modifier.background(backgroundColor, roundedCornerShape).border(BorderStroke(borderStrokeWidth, borderColor), roundedCornerShape)
+        modifier = modifier.background(backgroundColor, roundedCornerShape).border(BorderStroke(MaterialTheme.strokeWidth.normal, borderColor), roundedCornerShape)
     }
     Box(modifier = modifier) {
         Row(Modifier
@@ -177,7 +176,7 @@ fun ListEntry(text: String, onClick: () -> Unit, addStyle: Boolean = false) {
 
 @Composable
 fun ImportExportPopup(onImport: () -> Unit, onExport: () -> Unit, onClose: () -> Unit) {
-    val extraSize = MaterialTheme.spacing.xl
+    val extraSize = MaterialTheme.spacing.xl * 2
     Popup(onDismissRequest = { onClose() },
         alignment = Alignment.BottomCenter,
         modifier = Modifier.offset(0.dp, extraSize / 2)

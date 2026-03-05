@@ -27,6 +27,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 import java.lang.Exception
 import java.lang.Thread.sleep
+import kotlin.random.Random
 
 
 class AppActivity : ComponentActivity() {
@@ -114,7 +115,7 @@ class AppActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContentToAppUI()
         CoroutineScope(Dispatchers.IO).launch {
-            delay(3000)
+            delay(Random.nextLong(250,1000))
             loadData()
             withContext(Dispatchers.Main) {
                 refreshContent()
@@ -158,9 +159,7 @@ class AppActivity : ComponentActivity() {
     private fun setCustomSplashScreen() {
         val splash = installSplashScreen()
         splash.setOnExitAnimationListener { provider ->
-            provider.view.post {
-                provider.remove()
-            }
+            provider.remove()
         }
     }
 }

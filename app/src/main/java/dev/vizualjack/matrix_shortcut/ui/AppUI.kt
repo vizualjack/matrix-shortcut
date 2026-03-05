@@ -1,6 +1,10 @@
 package dev.vizualjack.matrix_shortcut.ui
 
 
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideIn
+import androidx.compose.animation.slideOut
 import androidx.compose.foundation.layout.absolutePadding
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -36,6 +40,8 @@ enum class Location() {
     LoadError
 }
 
+val TRANSITION_TIME = 300
+
 @Composable
 fun AppUI(
     activity: AppActivity,
@@ -52,7 +58,7 @@ fun AppUI(
         if(activity.storageData!!.matrixConfig != null) matrixConfig = activity.storageData!!.matrixConfig!!
     }
 
-    val startLocation: String// = Location.Loading.name
+    val startLocation: String
     if(activity.loadingStatus == AppActivity.LoadingStatus.LOADING) startLocation = Location.Loading.name
     else if(activity.loadingStatus == AppActivity.LoadingStatus.ERROR) startLocation = Location.LoadError.name
     else {
@@ -67,6 +73,30 @@ fun AppUI(
         NavHost(
             navController = navController,
             startDestination = startLocation,
+            enterTransition = {
+                slideIntoContainer(
+                    AnimatedContentTransitionScope.SlideDirection.Left,
+                    animationSpec = tween(TRANSITION_TIME)
+                )
+            },
+            exitTransition = {
+                slideOutOfContainer(
+                    AnimatedContentTransitionScope.SlideDirection.Left,
+                    animationSpec = tween(TRANSITION_TIME)
+                )
+            },
+            popEnterTransition = {
+                slideIntoContainer(
+                    AnimatedContentTransitionScope.SlideDirection.Right,
+                    animationSpec = tween(TRANSITION_TIME)
+                )
+            },
+            popExitTransition = {
+                slideOutOfContainer(
+                    AnimatedContentTransitionScope.SlideDirection.Right,
+                    animationSpec = tween(TRANSITION_TIME)
+                )
+            }
         ) {
             composable(route = Location.MatrixConfig.name) {
                 MatrixConfigUI(activity,
@@ -76,8 +106,7 @@ fun AppUI(
                         activity.storageData!!.matrixConfig = matrixConfig
                     },
                     onBack = {
-                        navController.backQueue.clear()
-                        navController.navigate(Location.Gestures.name)
+                        navController.popBackStack()
                     }
                 )
             }
@@ -87,16 +116,13 @@ fun AppUI(
                     gestures = gestures,
                     openGesture = { gesture ->
                         selectedGesture = gesture
-                        navController.backQueue.clear()
                         navController.navigate(Location.Gesture.name)
                     },
                     newGesture = {
                         selectedGesture = null
-                        navController.backQueue.clear()
                         navController.navigate(Location.Gesture.name)
                     },
                     onSettingsClick = {
-                        navController.backQueue.clear()
                         navController.navigate(Location.MatrixConfig.name)
                     }
                 )
@@ -105,8 +131,7 @@ fun AppUI(
                 GestureEdit(
                     editGesture = selectedGesture,
                     onBack = {
-                        navController.backQueue.clear()
-                        navController.navigate(Location.Gestures.name)
+                        navController.popBackStack()
                     },
                     onSave = { gesture: Gesture ->
                         if(!gestures.contains(gesture)) gestures = gestures.toMutableList().apply { add(gesture) }

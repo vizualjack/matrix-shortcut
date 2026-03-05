@@ -109,17 +109,17 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
 
     fun checkServerDomain(afterSuccessJob: (() -> Unit)? = null) {
         if (serverDomain == null || activity == null) {
-            if(activity != null && afterSuccessJob != null) activity.sendToastText("Please provide a server domain!")
+            if(activity != null && afterSuccessJob != null) activity.sendToastText("Please enter a server domain")
             return
         }
         CoroutineScope(Dispatchers.Default).launch {
             val result = MatrixChecker(activity.applicationContext).checkInstance(serverDomain!!)
             CoroutineScope(Dispatchers.Main).launch {
                 domainCheckResult = result
-                if(domainCheckResult == MatrixChecker.CheckResult.NO_MATRIX_INSTANCE) activity.sendToastText("No matrix instance at this domain")
-                else if (domainCheckResult == MatrixChecker.CheckResult.UNREACHABLE) activity.sendToastText("Server not reachable")
+                if(domainCheckResult == MatrixChecker.CheckResult.NO_MATRIX_INSTANCE) activity.sendToastText("No matrix server found at this domain")
+                else if (domainCheckResult == MatrixChecker.CheckResult.UNREACHABLE) activity.sendToastText("Server unreachable")
                 else if (afterSuccessJob != null) afterSuccessJob()
-                else activity.sendToastText("Matrix server reachable")
+                else activity.sendToastText("Server reachable")
             }
         }
     }
@@ -171,9 +171,9 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
                             Text(userName!!, style = MaterialTheme.typography.labelLarge)
                         }
                     }
-                    else Text( "Please login", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelLarge)
+                    else Text( "Please log in", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelLarge)
                     TextButton(
-                        if (userName != null) "Logout" else "Login",
+                        if (userName != null) "Log out" else "Log in",
                         {
                             if(userName != null) logout()
                             else if(domainCheckResult != MatrixChecker.CheckResult.OK) checkServerDomain({shownPopup = ShownPopup.LOGIN})
@@ -207,7 +207,7 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
                     TextButton("Send test message", {
                         if(activity == null) return@TextButton
                         if(serverDomain == null || serverDomain == "" || accessToken == null || accessToken == "") {
-                            activity.sendToastText("Please login first")
+                            activity.sendToastText("Please log in first")
                             return@TextButton
                         }
                         if(targetRoom == null || targetRoom == "") {
@@ -215,13 +215,13 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
                             return@TextButton
                         }
                         CoroutineScope(Dispatchers.Default).launch {
-                            val result = MatrixClient(activity.applicationContext, serverDomain!!, userName!!, accessToken!!, refreshToken).sendMessage(targetRoom!!, "That worked well!")
+                            val result = MatrixClient(activity.applicationContext, serverDomain!!, userName!!, accessToken!!, refreshToken).sendMessage(targetRoom!!, "Test successful.")
                             CoroutineScope(Dispatchers.Main).launch {
-                                activity.sendToastText(if (result.success) "Successfully sent test message!" else "Error while sending a test message: " + result.error)
+                                activity.sendToastText(if (result.success) "Test message sent successfully!" else "Error sending test message: " + result.error)
                             }
                         }
                     }, Modifier.fillMaxWidth())
-                    Text("This will send a test message to the specified room.", Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
+                    Text("This will send a test message to the selected room.", Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
                 }
             }
 
@@ -249,15 +249,12 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
                 onClose = { shownPopup = ShownPopup.NONE }
             )
         }
-        else {
-            activity?.sendToastText("Please provide a server domain first")
-            shownPopup = ShownPopup.NONE
-        }
+        else shownPopup = ShownPopup.NONE
     }
 
     if (shownPopup != ShownPopup.NONE && shownPopup != ShownPopup.LOGIN) {
         if(serverDomain == null || serverDomain == "" || accessToken == null || accessToken == "") {
-            activity?.sendToastText("Please login first")
+            activity?.sendToastText("Please log in first")
             shownPopup = ShownPopup.NONE
         }
         else if (shownPopup == ShownPopup.ROOM_CREATOR) {
@@ -296,10 +293,10 @@ data class LoginData(
 
 enum class LoginStatus(val text: String) {
     LOGGING_IN("Logging in..."),
-    FAILED("Username or password wasn't correct!"),
-    SUCCESS("Successfully logged in!"),
-    MISSING_DATA("Please provide username and password"),
-    SERVER_UNREACHABLE("Server not reachable"),
+    FAILED("Incorrect username or password"),
+    SUCCESS("Login successful"),
+    MISSING_DATA("Please enter username and password"),
+    SERVER_UNREACHABLE("Server unreachable"),
     TOO_MANY_REQUESTS("Server got too many requests, try again later"),
 }
 
@@ -342,7 +339,7 @@ fun LoginPopup(context: Context?, serverDomain: String, onClose: () -> Unit, onS
     }
 
     Popup(onDismissRequest = {onClose()}, header = {
-        Text("Login to " + serverDomain, style = MaterialTheme.typography.titleMedium)
+        Text("Log in to " + serverDomain, style = MaterialTheme.typography.titleMedium)
     }) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -377,7 +374,7 @@ fun LoginPopup(context: Context?, serverDomain: String, onClose: () -> Unit, onS
                 autofillType = AutofillType.Password
             )
 
-            Text("Password will be never saved!",
+            Text("Password will never be saved",
                 color = MaterialTheme.colorScheme.onPrimary,
                 style = MaterialTheme.typography.bodyMedium
             )
@@ -392,12 +389,12 @@ fun LoginPopup(context: Context?, serverDomain: String, onClose: () -> Unit, onS
 
 enum class CreateStatus(val text: String) {
     CREATING("Creating room..."),
-    UNAUTHORIZED("Access token invalid, please login again!"),
-    SUCCESS("Successfully created room!"),
-    MISSING_DATA("Please provide all data!"),
-    SERVER_UNREACHABLE("Server not reachable"),
+    UNAUTHORIZED("Invalid access token. Please log in again"),
+    SUCCESS("Room created successfully"),
+    MISSING_DATA("Please fill in all fields"),
+    SERVER_UNREACHABLE("Server unreachable"),
     TOO_MANY_REQUESTS("Server got too many requests, try again later"),
-    UNKNOWN("Unknown error!"),
+    UNKNOWN("Unknown error"),
 }
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -441,7 +438,7 @@ fun RoomCreatorPopup(context: Context?, serverDomain: String, userName: String, 
     }
 
     Popup(onDismissRequest = { onClose() }, header = {
-        Text("Create private room / direct message", style = MaterialTheme.typography.titleMedium)
+        Text("Create room", style = MaterialTheme.typography.titleMedium)
     }) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -494,7 +491,7 @@ fun RoomCreatorPopup(context: Context?, serverDomain: String, userName: String, 
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Text("Username is enough,\nif the user is on the same server", Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
+            Text("Username is enough if on the same server", Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
 
             Row(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.lg)) {
                 TextButton("Cancel", { onClose() }, Modifier.weight(1f))
@@ -506,7 +503,7 @@ fun RoomCreatorPopup(context: Context?, serverDomain: String, userName: String, 
 
 enum class SelectStatus(val text: String) {
     GETTING_DATA("Getting data..."),
-    UNAUTHORIZED("Access token invalid, please login again!"),
+    UNAUTHORIZED("Invalid access token. Please log in again"),
     SERVER_UNREACHABLE("Server not reachable"),
     TOO_MANY_REQUESTS("Server got too many requests, try again later"),
     NEED_TO_SELECT_A_ROOM("Please select a room"),
@@ -576,8 +573,8 @@ fun RoomSelectorPopup(context: Context?, serverDomain: String, userName: String,
     Popup(onDismissRequest = { onClose() }, header = {
         Row(Modifier.fillMaxWidth()) {
             Column(Modifier.weight(1f)){
-                Text("Room selector", style = MaterialTheme.typography.titleMedium)
-                Text ("Refreshing also accepts invites", style = MaterialTheme.typography.bodyMedium)
+                Text("Select room", style = MaterialTheme.typography.titleMedium)
+                Text ("Invitations are also accepted during refresh", style = MaterialTheme.typography.bodyMedium)
             }
             IconButton({refresh()}, Modifier.align(Alignment.CenterVertically)) {
                 Icon(Icons.Filled.Refresh, "Refresh")

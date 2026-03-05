@@ -26,16 +26,19 @@ import dev.vizualjack.matrix_shortcut.ui.theme.strokeWidth
 
 
 @Composable
-fun TextButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, highlight: Boolean = false, enabled: Boolean = true, customColor: Color? = null, textColor: Color = MaterialTheme.colorScheme.onSurface) {
+fun TextButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, highlight: Boolean = false, enabled: Boolean = true, customColor: Color? = null, customTextColor: Color? = null) {
     var color = if(highlight) MaterialTheme.colorScheme.surfaceTint else MaterialTheme.colorScheme.surface
     if(customColor != null) color = customColor
 
+    var textColor = MaterialTheme.colorScheme.onSurface
+    if(enabled && customTextColor != null) textColor = customTextColor
+
     var buttonModifier = modifier
-    if(!enabled) buttonModifier  = modifier.alpha(0.5f)
+    if(!enabled) buttonModifier = buttonModifier.alpha(0.5f)
 
     Button(
         { onClick() },
-        buttonModifier.height(50.dp),
+        buttonModifier.height(55.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = color,
         ),
