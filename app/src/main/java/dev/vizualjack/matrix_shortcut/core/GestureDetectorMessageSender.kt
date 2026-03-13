@@ -1,16 +1,10 @@
 package dev.vizualjack.matrix_shortcut.core
 
 import android.app.Service
-import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.os.IBinder
-import android.os.VibrationEffect
-import android.os.Vibrator
-import android.os.VibratorManager
 import android.util.Log
 import dev.vizualjack.matrix_shortcut.core.data.MatrixConfig
-import dev.vizualjack.matrix_shortcut.core.data.Storage
 import dev.vizualjack.matrix_shortcut.core.matrix.MatrixClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -25,14 +19,15 @@ class GestureDetectorMessageSender: Service() {
     }
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private var vibrator: Vibrator? = null
+    private var vibrationManager: VibrationManager? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if(intent == null) return START_NOT_STICKY
         serviceScope.launch {
             try {
+                vibrationManager = VibrationManager(applicationContext)
                 val result = sendMessage(intent.getStringExtra(INTENT_MESSAGE_KEY)!!)
-                vibrate(100L, 1)
+                vibrate()
                 log("sent message: $result")
             } catch (ex: Exception) {
                 log("Couldn't send message. reason: $ex")
@@ -47,8 +42,10 @@ class GestureDetectorMessageSender: Service() {
     }
 
     private fun sendMessage(message: String): Boolean {
-        val matrixConfig = GestureDetectorDataCache.data?.matrixConfig
-        if(matrixConfig == null || !isMatrixConfigComplete(matrixConfig)) return false
+        if(GestureDetectorDataCache.data == null ||
+            GestureDetectorDataCache.data!!.settings == null) return false
+        val matrixConfig = GestureDetectorDataCache.data?.settings!!.matrixConfig
+        if(!isMatrixConfigComplete(matrixConfig)) return false
         val matrixClient = MatrixClient(applicationContext, matrixConfig.serverDomain!!, matrixConfig.userName!!, matrixConfig.accessToken!!, matrixConfig.refreshToken)
         matrixClient.sendMessage(matrixConfig.targetRoom!!, message)
         return true
@@ -61,19 +58,12 @@ class GestureDetectorMessageSender: Service() {
                 matrixConfig.targetRoom != null
     }
 
-    private fun initVibratorManager() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-            vibrator = vibratorManager.defaultVibrator
-        }
-        else vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-    }
-
-    private fun vibrate(durationMillis: Long, vibrationAmplitude: Int) {
-        try {
-            if (vibrator == null) initVibratorManager()
-            if(vibrator != null) vibrator!!.vibrate(VibrationEffect.createOneShot(durationMillis, vibrationAmplitude))
-        } catch (_: Exception) {}
+    private fun vibrate() {
+        if(GestureDetectorDataCache.data == null) return
+        if(GestureDetectorDataCache.data!!.settings == null) return
+        if(GestureDetectorDataCache.data!!.settings!!.vibrationConfig.onGestureDetected == null) return
+        val vibrationSettings = GestureDetectorDataCache.data!!.settings!!.vibrationConfig.onGestureDetected!!
+        vibrationManager?.vibrate(vibrationSettings.durationMillis, vibrationSettings.amplitude)
     }
 
     private fun log(message: String) {

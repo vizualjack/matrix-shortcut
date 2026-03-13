@@ -11,6 +11,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
+import dev.vizualjack.matrix_shortcut.core.GestureDetectorDataCache
 import dev.vizualjack.matrix_shortcut.core.GestureDetectorService
 import dev.vizualjack.matrix_shortcut.core.data.Storage
 import dev.vizualjack.matrix_shortcut.core.data.StorageData
@@ -67,8 +68,9 @@ class AppActivity : ComponentActivity() {
                     contentResolver.openInputStream(uri)?.use { outputStream ->
                         storageData = StorageData()
                         val loadedStorageData = Json.decodeFromString<StorageData>(outputStream.readBytes().decodeToString())
+                        if(loadedStorageData.settings == null) return@registerForActivityResult
                         if(loadedStorageData.gestures != null) storageData!!.gestures = loadedStorageData.gestures
-                        if(loadedStorageData.matrixConfig != null) storageData!!.matrixConfig = loadedStorageData.matrixConfig
+                        if(loadedStorageData.settings != null) storageData!!.settings = loadedStorageData.settings
                         Storage(applicationContext).saveData(storageData!!)
                     }
                     refreshContent()
@@ -104,6 +106,7 @@ class AppActivity : ComponentActivity() {
         super.onStop()
         CoroutineScope(Dispatchers.IO).launch {
             saveData()
+            GestureDetectorDataCache.data = storageData!!
         }
     }
 

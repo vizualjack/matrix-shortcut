@@ -39,8 +39,8 @@ class GestureDetectorDataLoader: Service() {
         } else if (storageData.gestures == null) {
             log("missing gestures data")
             return false
-        } else if (storageData.matrixConfig == null) {
-            log("missing matrix config data")
+        } else if (storageData.settings == null) {
+            log("missing settings")
             return false
         }
         GestureDetectorDataCache.data = storageData

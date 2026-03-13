@@ -1,31 +1,26 @@
 package dev.vizualjack.matrix_shortcut.ui.screen
 
 import android.content.Context
+import android.widget.ScrollView
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -45,17 +40,19 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.AutofillType
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.input.pointer.motionEventSpy
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import dev.vizualjack.matrix_shortcut.AppActivity
-import dev.vizualjack.matrix_shortcut.R
+import dev.vizualjack.matrix_shortcut.core.VibrationManager
 import dev.vizualjack.matrix_shortcut.core.data.MatrixConfig
+import dev.vizualjack.matrix_shortcut.core.data.Settings
+import dev.vizualjack.matrix_shortcut.core.data.VibrationConfig
+import dev.vizualjack.matrix_shortcut.core.data.VibrationConfigEntry
 import dev.vizualjack.matrix_shortcut.core.matrix.MatrixChecker
 import dev.vizualjack.matrix_shortcut.core.matrix.MatrixClient
 import dev.vizualjack.matrix_shortcut.core.matrix.Room
+import dev.vizualjack.matrix_shortcut.ui.components.EditNumberField
 import dev.vizualjack.matrix_shortcut.ui.components.EditStringField
 import dev.vizualjack.matrix_shortcut.ui.components.Popup
 import dev.vizualjack.matrix_shortcut.ui.components.Screen
@@ -65,7 +62,6 @@ import dev.vizualjack.matrix_shortcut.ui.theme.AppTheme
 import dev.vizualjack.matrix_shortcut.ui.theme.spacing
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -78,18 +74,30 @@ enum class ShownPopup {
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config: MatrixConfig) -> Unit, onBack:() -> Unit) {
-    var serverDomain by rememberSaveable { mutableStateOf(config.serverDomain) }
-    var userName by rememberSaveable { mutableStateOf(config.userName) }
-    var accessToken by rememberSaveable { mutableStateOf(config.accessToken) }
-    var refreshToken by rememberSaveable { mutableStateOf(config.refreshToken) }
-    var targetRoom by rememberSaveable { mutableStateOf(config.targetRoom) }
+fun SettingsUI(activity: AppActivity?, settings: Settings, onSave:(settings: Settings) -> Unit, onBack:() -> Unit) {
+    var serverDomain by rememberSaveable { mutableStateOf(settings.matrixConfig.serverDomain) }
+    var userName by rememberSaveable { mutableStateOf(settings.matrixConfig.userName) }
+    var accessToken by rememberSaveable { mutableStateOf(settings.matrixConfig.accessToken) }
+    var refreshToken by rememberSaveable { mutableStateOf(settings.matrixConfig.refreshToken) }
+    var targetRoom by rememberSaveable { mutableStateOf(settings.matrixConfig.targetRoom) }
+    var wakeUpVibrationDurationMillis by rememberSaveable { mutableStateOf(settings.vibrationConfig.onWakeUp?.durationMillis) }
+    var wakeUpVibrationAmplitude by rememberSaveable { mutableStateOf(settings.vibrationConfig.onWakeUp?.amplitude) }
+    var gestureDetectedVibrationDurationMillis by rememberSaveable { mutableStateOf(settings.vibrationConfig.onGestureDetected?.durationMillis) }
+    var gestureDetectedVibrationAmplitude by rememberSaveable { mutableStateOf(settings.vibrationConfig.onGestureDetected?.amplitude) }
 
     var shownPopup by remember { mutableStateOf(ShownPopup.NONE) }
     var domainCheckResult by remember { mutableStateOf<MatrixChecker.CheckResult?>(null) }
 
     fun save() {
-        onSave(MatrixConfig(serverDomain, userName, accessToken, refreshToken, targetRoom))
+        val matrixConfig = MatrixConfig(serverDomain, userName, accessToken, refreshToken, targetRoom)
+        var wakeUpVibration: VibrationConfigEntry? = null
+        if(wakeUpVibrationDurationMillis != null && wakeUpVibrationAmplitude != null)
+            wakeUpVibration = VibrationConfigEntry(wakeUpVibrationDurationMillis!!, wakeUpVibrationAmplitude!!)
+        var onGestureDetectedVibration: VibrationConfigEntry? = null
+        if(gestureDetectedVibrationDurationMillis != null && gestureDetectedVibrationAmplitude != null)
+            onGestureDetectedVibration = VibrationConfigEntry(gestureDetectedVibrationDurationMillis!!, gestureDetectedVibrationAmplitude!!)
+        val vibrationConfig = VibrationConfig(wakeUpVibration, onGestureDetectedVibration)
+        onSave(Settings(matrixConfig, vibrationConfig))
         onBack()
     }
 
@@ -132,11 +140,12 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
             )
         }
 
-        Text("Matrix server", modifier = Modifier.align(Alignment.Center), style = MaterialTheme.typography.titleLarge)
+        Text("Settings", modifier = Modifier.align(Alignment.Center), style = MaterialTheme.typography.titleLarge)
     },{
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+            modifier = Modifier.verticalScroll(rememberScrollState())
         ) {
             Section("Server settings") {
                 Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)) {
@@ -225,10 +234,74 @@ fun MatrixConfigUI(activity: AppActivity?, config: MatrixConfig, onSave:(config:
                 }
             }
 
+            Section("Vibration (Wake up / Ready)") {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
+                ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)) {
+                        EditNumberField("Duration (ms)",
+                            wakeUpVibrationDurationMillis?.toInt(),
+                            { value ->
+                                wakeUpVibrationDurationMillis = value?.toLong()
+                                if((wakeUpVibrationDurationMillis ?: 0) > 1000) wakeUpVibrationDurationMillis = 1000
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                        EditNumberField("Amplitude (1-255)",
+                            wakeUpVibrationAmplitude,
+                            { value ->
+                                wakeUpVibrationAmplitude = value
+                                if((wakeUpVibrationAmplitude ?: 0) > 255) wakeUpVibrationAmplitude = 255
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Text( "Leave one field blank to disable vibration", style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                    TextButton("Test", {
+                        CoroutineScope(Dispatchers.Main).launch {
+                            if(activity == null) return@launch
+                            VibrationManager(activity.applicationContext).vibrate(wakeUpVibrationDurationMillis, wakeUpVibrationAmplitude)
+                        }
+                    }, modifier = Modifier.fillMaxWidth())
+                }
+            }
+
+            Section("Vibration (Shortcut detected)") {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
+                ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)) {
+                        EditNumberField("Duration (ms)",
+                            gestureDetectedVibrationDurationMillis?.toInt(),
+                            {value ->
+                                gestureDetectedVibrationDurationMillis = value?.toLong()
+                                if((gestureDetectedVibrationDurationMillis ?: 0) > 1000) gestureDetectedVibrationDurationMillis = 1000
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                        EditNumberField("Amplitude (1-255)",
+                            gestureDetectedVibrationAmplitude,
+                            { value ->
+                                gestureDetectedVibrationAmplitude = value
+                                if((gestureDetectedVibrationAmplitude ?: 0) > 255) gestureDetectedVibrationAmplitude = 255
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Text( "Leave one field blank to disable vibration", style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                    TextButton("Test", {
+                        CoroutineScope(Dispatchers.Main).launch {
+                            if(activity == null) return@launch
+                            VibrationManager(activity.applicationContext).vibrate(gestureDetectedVibrationDurationMillis, gestureDetectedVibrationAmplitude)
+                        }
+                    }, modifier = Modifier.fillMaxWidth())
+                }
+            }
+
             Row(
                 horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.lg),
                 verticalAlignment = Alignment.Bottom,
-                modifier = Modifier.fillMaxHeight(1f)
+//                modifier = Modifier.fillMaxHeight(1f)
             ) {
                 TextButton("Cancel", { onBack() }, Modifier.weight(1f))
                 TextButton("Save", { save() }, Modifier.weight(1f), true)
@@ -638,7 +711,13 @@ fun SettingsPreview() {
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            MatrixConfigUI(null, MatrixConfig("abc.domain", "username_here", "aaa", "aaa", "muuh"), onSave = {}, onBack = {})
+            SettingsUI(null,
+                Settings(
+                    MatrixConfig("abc.domain", "username_here", "aaa", "aaa", "muuh"),
+                    VibrationConfig()
+                ),
+                onSave = {},
+                onBack = {})
         }
     }
 }

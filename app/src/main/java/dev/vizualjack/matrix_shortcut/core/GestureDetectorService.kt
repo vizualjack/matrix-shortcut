@@ -5,17 +5,9 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.os.Build
-import android.os.VibrationEffect
-import android.os.Vibrator
-import android.os.VibratorManager
 import android.util.Log
 import android.view.KeyEvent
 import android.view.accessibility.AccessibilityEvent
-import dev.vizualjack.matrix_shortcut.core.data.MatrixConfig
-import dev.vizualjack.matrix_shortcut.core.data.Storage
-import dev.vizualjack.matrix_shortcut.core.matrix.MatrixClient
-import kotlinx.coroutines.launch
 
 
 class GestureDetectorService : AccessibilityService() {
@@ -26,7 +18,7 @@ class GestureDetectorService : AccessibilityService() {
     private var keyDownTime: Long = 0
     private var keyUpTime: Long = 0
 
-    private var vibrator: Vibrator? = null
+    private var vibrationManager: VibrationManager? = null
 
     private var gestureDetector: GestureDetector? = null
 
@@ -34,6 +26,7 @@ class GestureDetectorService : AccessibilityService() {
         override fun onReceive(context: Context, intent: Intent) {
             try {
                 if(intent.action == Intent.ACTION_SCREEN_ON) {
+                    vibrationManager = VibrationManager(context)
                     onScreenOn()
                 }
             } catch (_: Exception) {}
@@ -45,7 +38,6 @@ class GestureDetectorService : AccessibilityService() {
         val filter = IntentFilter()
         filter.addAction(Intent.ACTION_SCREEN_ON)
         registerReceiver(screenOnReceiver, filter)
-        initVibratorManager()
     }
 
     override fun onDestroy() {
@@ -55,7 +47,7 @@ class GestureDetectorService : AccessibilityService() {
     private fun onScreenOn() {
         startService(Intent(this, GestureDetectorDataLoader::class.java))
         screenOnTime = System.currentTimeMillis()
-        vibrate(30L, 1)
+        vibrate()
     }
 
     override fun onKeyEvent(event: KeyEvent?): Boolean {
@@ -106,19 +98,12 @@ class GestureDetectorService : AccessibilityService() {
         screenOnTime = 0
     }
 
-    private fun initVibratorManager() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-            vibrator = vibratorManager.defaultVibrator
-        }
-        else vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-    }
-
-    private fun vibrate(durationMillis: Long, vibrationAmplitude: Int) {
-        try {
-            if (vibrator == null) initVibratorManager()
-            if(vibrator != null) vibrator!!.vibrate(VibrationEffect.createOneShot(durationMillis, vibrationAmplitude))
-        } catch (_: Exception) {}
+    private fun vibrate() {
+        if(GestureDetectorDataCache.data == null) return
+        if(GestureDetectorDataCache.data!!.settings == null) return
+        if(GestureDetectorDataCache.data!!.settings!!.vibrationConfig.onWakeUp == null) return
+        val vibrationSettings = GestureDetectorDataCache.data!!.settings!!.vibrationConfig.onWakeUp!!
+        vibrationManager?.vibrate(vibrationSettings.durationMillis, vibrationSettings.amplitude)
     }
 
     private fun log(message: String) {

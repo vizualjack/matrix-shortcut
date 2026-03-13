@@ -3,22 +3,12 @@ package dev.vizualjack.matrix_shortcut.ui
 
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.slideIn
-import androidx.compose.animation.slideOut
-import androidx.compose.foundation.layout.absolutePadding
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -26,11 +16,13 @@ import androidx.navigation.compose.rememberNavController
 import dev.vizualjack.matrix_shortcut.core.data.Gesture
 import dev.vizualjack.matrix_shortcut.AppActivity
 import dev.vizualjack.matrix_shortcut.core.data.MatrixConfig
+import dev.vizualjack.matrix_shortcut.core.data.Settings
+import dev.vizualjack.matrix_shortcut.core.data.VibrationConfig
 import dev.vizualjack.matrix_shortcut.ui.screen.GestureEdit
 import dev.vizualjack.matrix_shortcut.ui.screen.GestureList
 import dev.vizualjack.matrix_shortcut.ui.screen.LoadErrorScreen
 import dev.vizualjack.matrix_shortcut.ui.screen.LoadingScreen
-import dev.vizualjack.matrix_shortcut.ui.screen.MatrixConfigUI
+import dev.vizualjack.matrix_shortcut.ui.screen.SettingsUI
 
 enum class Location() {
     Gestures,
@@ -48,14 +40,14 @@ fun AppUI(
 ) {
     val navController: NavHostController = rememberNavController()
 
-    var matrixConfig = remember { MatrixConfig() }
+    var settings = remember { Settings(MatrixConfig(), VibrationConfig()) }
     var gestures = remember { emptyList<Gesture>() }
     var selectedGesture: Gesture? = null
 
     fun onDataLoaded() {
         if(activity.storageData == null) return
         if(activity.storageData!!.gestures != null) gestures = activity.storageData!!.gestures!!
-        if(activity.storageData!!.matrixConfig != null) matrixConfig = activity.storageData!!.matrixConfig!!
+        if(activity.storageData!!.settings != null) settings = activity.storageData!!.settings!!
     }
 
     val startLocation: String
@@ -99,11 +91,11 @@ fun AppUI(
             }
         ) {
             composable(route = Location.MatrixConfig.name) {
-                MatrixConfigUI(activity,
-                    matrixConfig,
-                    onSave = { newConfig: MatrixConfig ->
-                        matrixConfig = newConfig
-                        activity.storageData!!.matrixConfig = matrixConfig
+                SettingsUI(activity,
+                    settings,
+                    onSave = { newSettings: Settings ->
+                        settings = newSettings
+                        activity.storageData!!.settings = settings
                     },
                     onBack = {
                         navController.popBackStack()
