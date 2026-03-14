@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material.icons.Icons
@@ -18,13 +20,22 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import dev.vizualjack.matrix_shortcut.ui.theme.spacing
 
 
 @Composable
 fun Screen(header: @Composable BoxScope.() -> Unit, content: @Composable BoxScope.() -> Unit) {
-    Column(modifier = Modifier.systemBarsPadding().padding(MaterialTheme.spacing.md)) {
+    Column(
+        modifier = Modifier
+            .systemBarsPadding()
+            .navigationBarsPadding()
+            .imePadding()
+            .padding(MaterialTheme.spacing.md)
+    ) {
         Box(modifier = Modifier.fillMaxWidth().padding(0.dp, 0.dp, 0.dp, MaterialTheme.spacing.md)) {
             header()
         }
