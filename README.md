@@ -9,9 +9,9 @@
 This app is a small tool that lets you send messages to a Matrix server using preconfigured gestures. Gestures are triggered exclusively via physical buttons (volume up and down), allowing them to be performed even while the phone is in your pocket. For example, you could trigger actions like unlocking your door or turning on lights as you approach home.
 
 <p align="center">
-	<img src="doc/main.png" height="500"/>
-	<img src="doc/edit.png" height="500"/>
-	<img src="doc/settings.png" height="500"/>
+	<img src="doc/main_1.png" height="500"/>
+	<img src="doc/edit_1.png" height="500"/>
+	<img src="doc/settings_1.png" height="500"/>
 </p>
 
 ### 📝 Features
