@@ -1,5 +1,5 @@
 <h1>
-	<img src="https://github.com/user-attachments/assets/6e6db2c6-94f6-4d0e-9c47-029190abbcdc" 
+	<img src="https://github.com/user-attachments/assets/fd36cc5c-51a3-4bfe-85e7-d590d8c297e6" 
 		alt="Logo"
 		width="30"
 	>
@@ -10,7 +10,7 @@ This app is a small tool that lets you send messages to a Matrix server using pr
 
 <p align="center">
 	<img src="doc/main.png" height="500"/>
-	<img src="doc/entry.png" height="500"/>
+	<img src="doc/edit.png" height="500"/>
 	<img src="doc/settings.png" height="500"/>
 </p>
 
