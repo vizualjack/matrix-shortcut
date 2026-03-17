@@ -5,13 +5,13 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class MemberInfo(
-    val display_name: String
+    val display_name: String? = null
 )
 
 @Serializable
 data class Member(
     val userName: String,
-    val display_name: String
+    val display_name: String? = null
 )
 
 @Serializable

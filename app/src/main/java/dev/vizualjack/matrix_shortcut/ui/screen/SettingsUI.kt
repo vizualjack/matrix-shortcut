@@ -699,7 +699,7 @@ fun RoomSelectorEntry(name: String, members: Int, selected: Boolean, onClick: ()
                 Text(name, style = MaterialTheme.typography.labelLarge)
                 Text(members.toString() + (if (members == 1) " Member" else " Members"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondary)
             }
-            if(selected) Text("Selected", color = MaterialTheme.colorScheme.onSecondary, style = MaterialTheme.typography.labelLarge)
+            if(selected) Text("Selected", modifier = Modifier.padding(MaterialTheme.spacing.md, 0.dp, 0.dp, 0.dp), color = MaterialTheme.colorScheme.onSecondary, style = MaterialTheme.typography.labelLarge)
         }
     }
 }

@@ -113,14 +113,14 @@ class MatrixClient(val context: Context, val serverDomain: String?) {
             if(!roomNameResponse.success) return Result(false, roomNameResponse.error)
             var roomName = roomNameResponse.value!!.name
             if(roomName == null) {
-                var chatPartnerMember: Member? = null
+                roomName = ""
                 for (member in members) {
                     if(member.userName == userName) continue
-                    chatPartnerMember = member
-                    break
+                    if(roomName != "") roomName += ", "
+                    if(member.display_name != null) roomName += member.display_name
+                    else roomName += member.userName
                 }
-                if (chatPartnerMember == null) roomName = roomId
-                else roomName = chatPartnerMember.display_name
+                if (roomName == "") roomName = roomId
             }
             rooms.add(Room(roomId, roomName, members.size))
         }
